@@ -1,0 +1,1 @@
+import{j as r}from"./editor-0UNLpIKn.js";import"./vendor-BxXcqAvo.js";import{A as o}from"./AdminLayout-JjHCbT5n.js";import{C as t}from"./CreatePage-BDcONJrb.js";import"./index-3gJhCOfM.js";import"./redux-C1DnmqWA.js";import"./RichTextEditor-Ai0kPSjy.js";const s=()=>r.jsx(o,{children:r.jsx(t,{})});export{s as default};

@@ -1,0 +1,53 @@
+# Google Merchant Center & SEO Crawler Configuration
+User-agent: *
+Allow: /
+Allow: /product/
+Allow: /products/
+Allow: /categories/
+Allow: /category/
+Allow: /search
+Allow: /checkout
+Allow: /cart
+Allow: /order-lookup
+Allow: /wishlist
+Disallow: /admin
+Disallow: /admin/
+Disallow: /account
+Disallow: /api/
+Disallow: /*.pdf
+
+# Specific user agents
+User-agent: Googlebot
+Allow: /
+Allow: /product/
+Allow: /products/
+Allow: /categories/
+Allow: /category/
+Allow: /search
+Allow: /checkout
+Allow: /cart
+Allow: /order-lookup
+Allow: /wishlist
+Disallow: /admin
+Disallow: /account
+Disallow: /api/
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Allow: /search
+Allow: /checkout
+Allow: /cart
+Allow: /order-lookup
+Allow: /wishlist
+Disallow: /admin
+Disallow: /account
+Disallow: /api/
+Crawl-delay: 1
+
+# Sitemaps (on API subdomain)
+Sitemap: https://api.wolfsupplies.co.uk/api/sitemap.xml
+Sitemap: https://api.wolfsupplies.co.uk/api/sitemap-products.xml
+
+# GMC Feed also on API subdomain
+# Format: https://api.wolfsupplies.co.uk/api/gmc-feed.xml
