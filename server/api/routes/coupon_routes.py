@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from controllers.coupon_controller import (
     get_coupons,
     get_coupon_by_code,
+    validate_coupon,
     create_coupon,
     update_coupon,
     delete_coupon
@@ -35,6 +36,18 @@ async def create_new_coupon(body: dict = Body(...)):
         print(f"[coupon_routes] POST Error: {str(e)}")
         traceback.print_exc()
         return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
+
+
+@router.post("/validate")
+async def validate_coupon_code(body: dict = Body(...)):
+    """Validate coupon for checkout"""
+    try:
+        result = await validate_coupon(body)
+        return JSONResponse(content=result, status_code=200)
+    except Exception as e:
+        status_code = getattr(e, "status_code", 500)
+        detail = getattr(e, "detail", str(e))
+        return JSONResponse(content={"success": False, "message": detail}, status_code=status_code)
 
 @router.put("/{coupon_id}")
 async def update_existing_coupon(coupon_id: str, body: dict = Body(...)):

@@ -1,16 +1,24 @@
-from fastapi import APIRouter, Depends
-from controllers.payment_controller import (
-    initiate_payment,
-    verify_payment
-)
-from middleware.auth_middleware import protect
+from fastapi import APIRouter, Body, HTTPException
+from controllers.paymentController import create_checkout_session, create_payment_intent
 
 router = APIRouter()
 
-@router.post("/initiate")
-async def initiate(data: dict, user=Depends(protect)):
-    return await initiate_payment(data, user)
 
-@router.post("/verify")
-async def verify(data: dict, user=Depends(protect)):
-    return await verify_payment(data, user)
+@router.post("/create-checkout-session")
+async def create_checkout_session_route(body: dict = Body(...)):
+    try:
+        return await create_checkout_session(body)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/create-payment-intent")
+async def create_payment_intent_route(body: dict = Body(...)):
+    try:
+        return await create_payment_intent(body)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Security
 from controllers.order_controller import (
     create_order,
     get_all_orders,
@@ -7,11 +7,32 @@ from controllers.order_controller import (
     update_fulfillment_status,
     update_delivery_status,
     update_payment_status,
+    update_order_contact,
+    update_order_shipping,
+    update_order_billing,
+    update_order_remarks,
     delete_order
 )
-from middleware.auth_middleware import protect, admin
+from middleware.auth_middleware import protect, admin, security
+from fastapi.security import HTTPAuthorizationCredentials
+from jose import jwt, JWTError
 
 router = APIRouter()
+
+
+def optional_auth(credentials: HTTPAuthorizationCredentials | None = Security(security)):
+    if not credentials:
+        return None
+    try:
+        payload = jwt.decode(credentials.credentials, "eerkinstech", algorithms=["HS256"])
+        user_id = payload.get("id")
+        if not user_id:
+            return None
+        return {"id": user_id}
+    except JWTError:
+        return None
+    except Exception:
+        return None
 
 def check_order_permission(user: dict):
     """Check if user can manage orders"""
@@ -34,7 +55,7 @@ async def fetch_orders(user=Depends(protect)):
     return await get_all_orders()
 
 @router.get("/{order_id}")
-async def fetch_order_by_id(order_id: str, user=Depends(protect)):
+async def fetch_order_by_id(order_id: str, user=Depends(optional_auth)):
     return await get_order_by_id(order_id, user)
 
 @router.put("/{order_id}")
@@ -60,6 +81,34 @@ async def modify_payment_status(order_id: str, data: dict, user=Depends(protect)
     if not check_order_permission(user):
         raise HTTPException(403, "Not authorized. Admin access required")
     return await update_payment_status(order_id, data, user)
+
+
+@router.put("/{order_id}/contact")
+async def modify_order_contact(order_id: str, data: dict, user=Depends(protect)):
+    if not check_order_permission(user):
+        raise HTTPException(403, "Not authorized. Admin access required")
+    return await update_order_contact(order_id, data, user)
+
+
+@router.put("/{order_id}/shipping")
+async def modify_order_shipping(order_id: str, data: dict, user=Depends(protect)):
+    if not check_order_permission(user):
+        raise HTTPException(403, "Not authorized. Admin access required")
+    return await update_order_shipping(order_id, data, user)
+
+
+@router.put("/{order_id}/billing")
+async def modify_order_billing(order_id: str, data: dict, user=Depends(protect)):
+    if not check_order_permission(user):
+        raise HTTPException(403, "Not authorized. Admin access required")
+    return await update_order_billing(order_id, data, user)
+
+
+@router.put("/{order_id}/remarks")
+async def modify_order_remarks(order_id: str, data: dict, user=Depends(protect)):
+    if not check_order_permission(user):
+        raise HTTPException(403, "Not authorized. Admin access required")
+    return await update_order_remarks(order_id, data, user)
 
 @router.delete("/{order_id}")
 async def remove_order(order_id: str, user=Depends(protect)):

@@ -12,6 +12,67 @@ const initialState = {
   error: null,
 };
 
+const buildSnapshotKey = (snapshotLike) => {
+  if (!snapshotLike || typeof snapshotLike !== 'object') return null;
+
+  if (snapshotLike.variantId) {
+    return `variant:${snapshotLike.variantId}`;
+  }
+
+  const selectedVariants = snapshotLike.selectedVariants && typeof snapshotLike.selectedVariants === 'object'
+    ? snapshotLike.selectedVariants
+    : {};
+
+  const parts = Object.keys(selectedVariants)
+    .sort()
+    .map((key) => `${key}:${selectedVariants[key]}`);
+
+  if (snapshotLike.selectedSize) {
+    parts.push(`selectedSize:${snapshotLike.selectedSize}`);
+  }
+
+  if (snapshotLike.selectedColor) {
+    parts.push(`selectedColor:${snapshotLike.selectedColor}`);
+  }
+
+  return parts.length ? parts.join('|') : null;
+};
+
+const normalizeWishlistItem = (it) => {
+  if (!it) return it;
+
+  if (it.snapshot) {
+    const productRef = it.product;
+    const pid =
+      (productRef && typeof productRef === 'object' && productRef._id) ||
+      it.productId ||
+      it.snapshot.productId ||
+      it.snapshot._id ||
+      null;
+
+    return {
+      ...it.snapshot,
+      _id: pid,
+      productId: pid,
+      variantId: it.variantId || it.snapshot.variantId || null,
+      snapshotKey: it.snapshotKey || buildSnapshotKey(it.snapshot),
+      __isSnapshot: true,
+      product: productRef || null,
+      addedAt: it.addedAt || it.snapshot.addedAt || null,
+    };
+  }
+
+  if (it.product && typeof it.product === 'object') {
+    return { ...it.product, __isSnapshot: false };
+  }
+
+  if (it.product) {
+    return { _id: it.product, productId: it.product, __isSnapshot: false };
+  }
+
+  return it;
+};
+
 export const fetchWishlist = createAsyncThunk('wishlist/fetchWishlist', async (_, { rejectWithValue }) => {
   try {
     const token = localStorage.getItem('token');
@@ -23,17 +84,7 @@ export const fetchWishlist = createAsyncThunk('wishlist/fetchWishlist', async (_
     });
     const data = res.data;
 // normalize items: prefer snapshot if present, otherwise product
-    const items = (data.items || []).map((it) => {
-      if (it.snapshot) {
-        // ensure snapshot has product id and keep populated product for availability checks
-        const pid = (it.product && it.product._id) || it.snapshot._id || null;
-return { ...it.snapshot, _id: pid || it.snapshot._id, __isSnapshot: true, product: it.product || null };
-      }
-      if (it.product) {
-return { ...it.product, __isSnapshot: false };
-      }
-      return it;
-    });
+    const items = (data.items || []).map(normalizeWishlistItem);
 return items;
   } catch (err) {
     return rejectWithValue(err.message);
@@ -53,16 +104,7 @@ export const addItemToServer = createAsyncThunk('wishlist/addItemToServer', asyn
     const res = await axios.post(`${API}/api/wishlist`, body, { headers });
 const data = res.data;
     // normalize return items like fetchWishlist
-    const items = (data.items || []).map((it) => {
-      if (it.snapshot) {
-        const pid = (it.product && it.product._id) || it.snapshot._id || null;
-return { ...it.snapshot, _id: pid || it.snapshot._id, __isSnapshot: true, product: it.product || null };
-      }
-      if (it.product) {
-return { ...it.product, __isSnapshot: false };
-      }
-      return it;
-    });
+    const items = (data.items || []).map(normalizeWishlistItem);
     return items;
   } catch (err) {
     return rejectWithValue(err.message);
@@ -83,27 +125,19 @@ export const removeItemFromServer = createAsyncThunk('wishlist/removeItemFromSer
     }
 
     if (!productId) throw new Error('productId is required to remove wishlist item');
-let url = variantId ? `${API}/api/wishlist/${productId}?variantId=${encodeURIComponent(variantId)}` : `${API}/api/wishlist/${productId}`;
+    const snapshotLike = payload && typeof payload === 'object'
+      ? (payload.snapshot || payload)
+      : null;
+    const snapshotKey = payload?.snapshotKey || buildSnapshotKey(snapshotLike);
+    const params = new URLSearchParams();
+    if (variantId) params.set('variantId', variantId);
+    if (!variantId && snapshotKey) params.set('snapshotKey', snapshotKey);
+let url = `${API}/api/wishlist/${productId}${params.toString() ? `?${params.toString()}` : ''}`;
 const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const res = await axios.delete(url, { headers });
 const data = res.data;
     // normalize items similar to fetchWishlist / addItemToServer
-    const items = (data.items || []).map((it) => {
-if (it.snapshot) {
-        // Get product ID from the product object reference
-        const pid = (it.product && it.product._id) || it.snapshot._id || null;
-return { 
-          ...it.snapshot, 
-          _id: pid || it.snapshot._id, 
-          __isSnapshot: true, 
-          product: it.product || null 
-        };
-      }
-      if (it.product) {
-return { ...it.product, __isSnapshot: false };
-      }
-      return it;
-    });
+    const items = (data.items || []).map(normalizeWishlistItem);
 return items;
   } catch (err) {
 return rejectWithValue(err.message);

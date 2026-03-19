@@ -160,6 +160,11 @@ const OrderManagement = () => {
       });
       if (!response.ok) throw new Error('Failed to update fulfillment status');
       toast.success(`Order marked as ${fulfillmentStatus}`);
+      setModalOrder((prev) => (
+        prev && prev._id === orderId
+          ? { ...prev, fulfillmentStatus }
+          : prev
+      ));
       dispatch(fetchOrders());
     } catch (error) {
       toast.error(error.message);
@@ -189,6 +194,11 @@ const OrderManagement = () => {
       };
 
       toast.success(statusMessage[deliveryStatus] || 'Status updated');
+      setModalOrder((prev) => (
+        prev && prev._id === orderId
+          ? { ...prev, deliveryStatus }
+          : prev
+      ));
       dispatch(fetchOrders());
     } catch (error) {
       toast.error(error.message);
@@ -904,10 +914,10 @@ const OrderManagement = () => {
                   }}>
                     <h4 className="font-semibold mb-3" style={{ color: 'var(--color-text-primary, #000000)' }}>Fulfillment</h4>
                     <div className="px-3 py-2 rounded text-sm font-semibold" style={{
-                      backgroundColor: modalOrder.status === 'completed' ? 'var(--color-accent-primary, #a5632a)' : 'var(--color-bg-section, #e5e5e5)',
-                      color: modalOrder.status === 'completed' ? 'white' : 'var(--color-text-primary, #000000)'
+                      backgroundColor: modalOrder.fulfillmentStatus === 'fulfilled' ? 'var(--color-accent-primary, #a5632a)' : 'var(--color-bg-section, #e5e5e5)',
+                      color: modalOrder.fulfillmentStatus === 'fulfilled' ? 'white' : 'var(--color-text-primary, #000000)'
                     }}>
-                      {modalOrder.status === 'completed' ? '✓ Fulfilled' : '⏳ Unfulfilled'}
+                      {modalOrder.fulfillmentStatus === 'fulfilled' ? 'Fulfilled' : 'Unfulfilled'}
                     </div>
                   </div>
 
@@ -1112,3 +1122,4 @@ const OrderManagement = () => {
 };
 
 export default OrderManagement;
+

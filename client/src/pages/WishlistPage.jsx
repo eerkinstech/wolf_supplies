@@ -143,15 +143,22 @@ const WishlistPage = () => {
       // For regular product items, get from product._id or _id
       let productId = null;
       if (itemOrId.__isSnapshot) {
-        // Snapshot item: _id contains the product ID
-        productId = itemOrId._id;
+        // Snapshot item: prefer the explicit productId normalized from the API
+        productId = itemOrId.productId || itemOrId._id;
       } else {
         // Regular product item
         productId = itemOrId.productId || itemOrId._id || (itemOrId.product && (itemOrId.product._id || itemOrId.product));
       }
 
       const variantId = itemOrId.variantId || (itemOrId.snapshot && itemOrId.snapshot.variantId) || null;
-      dispatch(removeItemFromServer({ productId, variantId })).then(() => {
+      dispatch(removeItemFromServer({
+        productId,
+        variantId,
+        snapshotKey: itemOrId.snapshotKey || null,
+        selectedVariants: itemOrId.selectedVariants || {},
+        selectedSize: itemOrId.selectedSize || null,
+        selectedColor: itemOrId.selectedColor || null,
+      })).then(() => {
         toast.success('Removed from wishlist');
       }).catch((err) => {
         toast.error('Failed to remove from wishlist');
@@ -207,7 +214,14 @@ const WishlistPage = () => {
     availableItems.forEach((item) => {
       const productId = item.productId || item._id || (item.product && (item.product._id || item.product));
       const variantId = item.variantId || null;
-      dispatch(removeItemFromServer({ productId, variantId }));
+      dispatch(removeItemFromServer({
+        productId,
+        variantId,
+        snapshotKey: item.snapshotKey || null,
+        selectedVariants: item.selectedVariants || {},
+        selectedSize: item.selectedSize || null,
+        selectedColor: item.selectedColor || null,
+      }));
     });
 
     toast.success(`Moved ${availableItems.length} item(s) to cart${skipped.length ? ` — ${skipped.length} out-of-stock skipped` : ''}`);

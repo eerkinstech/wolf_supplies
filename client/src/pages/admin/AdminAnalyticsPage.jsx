@@ -351,7 +351,7 @@ const AdminAnalyticsPage = () => {
                         color: selectedPreset === preset.value ? 'white' : 'var(--color-text-primary)',
                       }}
                     >
-                      {selectedPreset === preset.value && '✓ '}
+                      {selectedPreset === preset.value && '? '}
                       {preset.label}
                     </button>
                   ))}
@@ -412,7 +412,9 @@ const AdminAnalyticsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
           <div className="rounded-lg shadow p-6" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)', borderWidth: '1px' }}>
             <h3 className="text-sm font-semibold uppercase" style={{ color: 'var(--color-text-secondary)' }}>Total Sales</h3>
-            <p className="text-3xl font-bold mt-2" style={{ color: 'var(--color-accent-primary)' }}>£{analytics.totalSales}</p>
+            <p className="text-3xl font-bold mt-2" style={{ color: 'var(--color-accent-primary)' }}>
+              <span>&pound;</span>{analytics.totalSales}
+            </p>
             <p className="text-sm mt-2" style={{ color: 'var(--color-text-light)' }}>All time revenue</p>
           </div>
 
@@ -430,14 +432,32 @@ const AdminAnalyticsPage = () => {
 
           <div className="rounded-lg shadow p-6" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)', borderWidth: '1px' }}>
             <h3 className="text-sm font-semibold uppercase" style={{ color: 'var(--color-text-secondary)' }}>Avg. Order Value</h3>
-            <p className="text-3xl font-bold mt-2" style={{ color: 'var(--color-text-primary)' }}>£{analytics.avgOrderValue}</p>
+            <p className="text-3xl font-bold mt-2" style={{ color: 'var(--color-text-primary)' }}>
+              <span>&pound;</span>{analytics.avgOrderValue}
+            </p>
             <p className="text-sm mt-2" style={{ color: 'var(--color-text-light)' }}>Average per order</p>
           </div>
         </div>
 
         {/* Orders Table - Full Width */}
         <div className="rounded-lg shadow p-6 mt-8 w-full" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)', borderWidth: '1px' }}>
-          <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>📋 Orders Details</h2>
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text-primary)' }}>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M3 10h18" />
+              <path d="M8 4v16" />
+            </svg>
+            <span>Orders Details</span>
+          </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -457,8 +477,8 @@ const AdminAnalyticsPage = () => {
                     }}
                   >
                     Gross Sale{' '}
-                    <span style={{ color: sortColumn === 'gross' && sortDirection === 'asc' ? '#000' : '#ccc' }}>▲</span>
-                    <span style={{ color: sortColumn === 'gross' && sortDirection === 'desc' ? '#000' : '#ccc' }}>▼</span>
+                    <span style={{ color: sortColumn === 'gross' && sortDirection === 'asc' ? '#000' : '#ccc' }}>&uarr;</span>
+                    <span style={{ color: sortColumn === 'gross' && sortDirection === 'desc' ? '#000' : '#ccc' }}>&darr;</span>
                   </th>
                   <th
                     className="text-center py-2 px-3 font-semibold cursor-pointer hover:underline"
@@ -473,10 +493,11 @@ const AdminAnalyticsPage = () => {
                     }}
                   >
                     Orders{' '}
-                    <span style={{ color: sortColumn === 'orders' && sortDirection === 'asc' ? '#000' : '#ccc' }}>▲</span>
-                    <span style={{ color: sortColumn === 'orders' && sortDirection === 'desc' ? '#000' : '#ccc' }}>▼</span>
+                    <span style={{ color: sortColumn === 'orders' && sortDirection === 'asc' ? '#000' : '#ccc' }}>&uarr;</span>
+                    <span style={{ color: sortColumn === 'orders' && sortDirection === 'desc' ? '#000' : '#ccc' }}>&darr;</span>
                   </th>
-                  <th className="text-left py-2 px-3 font-semibold" style={{ color: 'var(--color-text-primary)' }}>Date</th>
+                  <th className="text-right py-2 px-3 font-semibold" style={{ color: 'var(--color-text-primary)' }}>Original Price</th>
+                  <th className="text-right py-2 px-3 font-semibold" style={{ color: 'var(--color-text-primary)' }}>Discounted Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -509,6 +530,7 @@ const AdminAnalyticsPage = () => {
                             price: item.price || 0,
                             totalQty: 0,
                             totalSale: 0,
+                            totalDiscount: 0,
                             orderCount: 0,
                             lastDate: order.createdAt,
                             orderIds: new Set()  // Track unique order IDs
@@ -516,8 +538,17 @@ const AdminAnalyticsPage = () => {
                         }
 
                         const qty = item.qty || 1;
+                        const lineTotal = (item.price || 0) * qty;
+                        const orderItemsTotal = Array.isArray(order.orderItems)
+                          ? order.orderItems.reduce((sum, orderItem) => sum + ((orderItem.price || 0) * (orderItem.qty || 1)), 0)
+                          : 0;
+                        const orderDiscount = Number(order.discountAmount || 0);
+                        const lineDiscount = orderItemsTotal > 0
+                          ? (orderDiscount * lineTotal) / orderItemsTotal
+                          : 0;
                         productMap[compositeKey].totalQty += qty;
-                        productMap[compositeKey].totalSale += (item.price || 0) * qty;
+                        productMap[compositeKey].totalSale += lineTotal;
+                        productMap[compositeKey].totalDiscount += lineDiscount;
 
                         // Only count this order once (even if product has multiple line items)
                         if (!productMap[compositeKey].orderIds.has(String(order._id))) {
@@ -543,7 +574,9 @@ const AdminAnalyticsPage = () => {
                   let sorted = Object.values(productMap).sort((a, b) => {
                     // If column header sort is active, use that
                     if (sortColumn === 'gross') {
-                      return sortDirection === 'asc' ? a.totalSale - b.totalSale : b.totalSale - a.totalSale;
+                      const grossA = (a.totalSale || 0) - (a.totalDiscount || 0);
+                      const grossB = (b.totalSale || 0) - (b.totalDiscount || 0);
+                      return sortDirection === 'asc' ? grossA - grossB : grossB - grossA;
                     }
                     if (sortColumn === 'orders') {
                       return sortDirection === 'asc' ? a.orderCount - b.orderCount : b.orderCount - a.orderCount;
@@ -551,11 +584,11 @@ const AdminAnalyticsPage = () => {
 
                     // If min gross sale is active, sort ascending (min to max)
                     if (minGrossSale !== 'all' && maxGrossSale === 'all') {
-                      return a.totalSale - b.totalSale;
+                      return (a.totalSale - a.totalDiscount) - (b.totalSale - b.totalDiscount);
                     }
                     // If max gross sale is active, sort descending (max to min)
                     if (maxGrossSale !== 'all' && minGrossSale === 'all') {
-                      return b.totalSale - a.totalSale;
+                      return (b.totalSale - b.totalDiscount) - (a.totalSale - a.totalDiscount);
                     }
                     // If min orders is active, sort ascending
                     if (minOrders !== 'all' && maxOrders === 'all') {
@@ -566,13 +599,13 @@ const AdminAnalyticsPage = () => {
                       return b.orderCount - a.orderCount;
                     }
                     // Default: sort by gross sale descending
-                    return b.totalSale - a.totalSale;
+                    return (b.totalSale - b.totalDiscount) - (a.totalSale - a.totalDiscount);
                   });
 
                   // Render
                   return sorted
                     .filter((product) => {
-                      const gross = parseFloat(product.totalSale) || 0;
+                      const gross = Math.max(0, (parseFloat(product.totalSale) || 0) - (parseFloat(product.totalDiscount) || 0));
                       const orders = parseInt(product.orderCount, 10) || 0;
                       return gross >= minGrossVal && gross <= maxGrossVal && orders >= minOrdersVal && orders <= maxOrdersVal;
                     })
@@ -610,19 +643,22 @@ const AdminAnalyticsPage = () => {
                         </td>
 
                         <td className="py-2 px-3 text-right font-bold" style={{ color: '#10b981' }}>
-                          £{product.totalSale.toFixed(2)}
+                          <span>&pound;</span>{Math.max(0, (product.totalSale || 0) - (product.totalDiscount || 0)).toFixed(2)}
                         </td>
                         <td className="py-2 px-3 text-center font-semibold" style={{ color: 'var(--color-accent-primary)' }}>
                           {product.orderCount}
                         </td>
-                        <td className="py-2 px-3" style={{ color: 'var(--color-text-light)' }}>
-                          {product.lastDate ? new Date(product.lastDate).toLocaleDateString() : 'N/A'}
+                        <td className="py-2 px-3 text-right font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                          <span>&pound;</span>{(product.totalSale || 0).toFixed(2)}
+                        </td>
+                        <td className="py-2 px-3 text-right font-semibold" style={{ color: '#dc2626' }}>
+                          -<span>&pound;</span>{(product.totalDiscount || 0).toFixed(2)}
                         </td>
                       </tr>
                     ));
-                })() : (
+                                })() : (
                   <tr>
-                    <td colSpan="6" className="py-4 text-center" style={{ color: 'var(--color-text-light)' }}>
+                    <td colSpan="5" className="py-4 text-center" style={{ color: 'var(--color-text-light)' }}>
                       No orders found for the selected period
                     </td>
                   </tr>
@@ -648,7 +684,7 @@ const AdminAnalyticsPage = () => {
                   className="text-2xl font-bold"
                   style={{ color: 'var(--color-text-light)' }}
                 >
-                  ×
+                  &times;
                 </button>
               </div>
 

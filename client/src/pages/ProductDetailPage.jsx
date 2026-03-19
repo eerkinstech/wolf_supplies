@@ -46,29 +46,108 @@ const ProductDetailPage = () => {
   const [requireReviewApproval, setRequireReviewApproval] = useState(true);
   const { token, user } = useAuth();
   const cartItems = useSelector((state) => state.cart.items);
+  const productTrustHighlights = [
+    {
+      icon: 'fas fa-shield-alt',
+      title: 'Built for Daily Use',
+      description: 'Selected for dependable performance in homes, gardens, sites, and demanding everyday environments.',
+    },
+    {
+      icon: 'fas fa-award',
+      title: 'Reliable Quality',
+      description: 'Strong materials and practical construction help deliver a finish you can count on over time.',
+    },
+    {
+      icon: 'fas fa-truck',
+      title: 'Fast UK Dispatch',
+      description: 'Quick shipping across the United Kingdom means less waiting and faster progress on your job.',
+    },
+    {
+      icon: 'fas fa-tools',
+      title: 'Practical Design',
+      description: 'Built with real-world use in mind, combining straightforward fitting with dependable day-to-day function.',
+    },
+    {
+      icon: 'fas fa-pound-sign',
+      title: 'Value That Lasts',
+      description: 'A strong balance of durability, finish, and price helps you get more from every purchase.',
+    },
+    {
+      icon: 'fas fa-headset',
+      title: 'Support You Can Reach',
+      description: 'Backed by responsive service from a UK-based store focused on straightforward ordering and support.',
+    },
+  ];
 
   const API = import.meta.env.VITE_API_URL || '';
 
-  // Helper to get absolute image URL - handles strings and objects
-  const getImgSrc = (img) => {
+  const normalizeImageValue = (img) => {
     if (!img) return '';
 
-    // Handle string URLs
     if (typeof img === 'string') {
-      if (!img.trim()) return '';
-      return img.startsWith('http') ? img : `${API}${img}`;
+      return img.trim();
     }
 
-    // Handle image objects (from Cloudinary or similar)
     if (typeof img === 'object') {
-      const url = img.url || img.secure_url || img.public_url || img.path || img.src || '';
-      if (!url) return '';
-      if (typeof url === 'string') {
-        return url.startsWith('http') ? url : `${API}${url}`;
-      }
+      return (
+        img.url ||
+        img.secure_url ||
+        img.secureUrl ||
+        img.public_url ||
+        img.publicUrl ||
+        img.serverUrl ||
+        img.path ||
+        img.src ||
+        img.image ||
+        ''
+      );
     }
 
     return '';
+  };
+
+  const getImageKey = (img) => {
+    const normalized = normalizeImageValue(img);
+    if (!normalized) return '';
+
+    try {
+      const base = API || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+      const parsed = new URL(normalized, base);
+      return `${parsed.pathname}${parsed.search}`;
+    } catch {
+      return normalized.replace(/^https?:\/\/[^/]+/i, '');
+    }
+  };
+
+  const dedupeImages = (images) => {
+    const seen = new Set();
+    return images.filter((img) => {
+      const key = getImageKey(img);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const buildOrderedProductImages = (productData) => {
+    const mainImage = normalizeImageValue(productData?.image);
+    const galleryImages = Array.isArray(productData?.images)
+      ? productData.images
+      : productData?.images
+        ? [productData.images]
+        : [];
+
+    return dedupeImages([
+      mainImage,
+      ...galleryImages.map(normalizeImageValue).filter(Boolean),
+    ].filter(Boolean));
+  };
+
+  // Helper to get absolute image URL - handles strings and objects
+  const getImgSrc = (img) => {
+    const normalized = normalizeImageValue(img);
+    if (!normalized) return '';
+    return normalized.startsWith('http') ? normalized : `${API}${normalized}`;
   };
 
   // Set up meta tags for SEO
@@ -332,33 +411,22 @@ const ProductDetailPage = () => {
       if (matches) { matched = vc; break; }
     }
 
-    // Normalize image entries (handle strings or objects with url/secure_url/public_url/path/src)
-    const normalizeImg = (img) => {
-      if (!img) return '';
-      if (typeof img === 'string') return img;
-      if (typeof img === 'object') return img.url || img.secure_url || img.public_url || img.path || img.src || '';
-      return '';
-    };
-
-    const productImagesRaw = product?.images || [];
-    const normalizedProductImages = productImagesRaw.map(normalizeImg).filter(Boolean);
+    const normalizedProductImages = buildOrderedProductImages(product);
 
     // If matched variant has custom image, include it first then product images (normalized)
     if (matched && matched.image) {
-      const variantImg = normalizeImg(matched.image);
+      const variantImg = normalizeImageValue(matched.image);
       if (variantImg) {
-        // remove any duplicate of variantImg from product images
-        const otherImages = normalizedProductImages.filter(img => img !== variantImg);
-        return [variantImg, ...otherImages];
+        return dedupeImages([...normalizedProductImages, variantImg]);
       }
     }
 
     // No matched variant image — return normalized product images (fallback)
     // Ensure we always have at least the main product image
     if (normalizedProductImages.length === 0 && product.image) {
-      return [normalizeImg(product.image)];
+      return dedupeImages([normalizeImageValue(product.image)]);
     }
-    return normalizedProductImages;
+    return dedupeImages(normalizedProductImages);
   };
 
   // Helper to render star icons for fractional ratings
@@ -585,7 +653,7 @@ const ProductDetailPage = () => {
         setSavedProductFlag(false);
         // remove specific variant if available, otherwise remove all product entries
         // Works for both authenticated AND guest users
-        dispatch(removeItemFromServer({ productId: product._id, variantId }));
+        dispatch(removeItemFromServer({ productId: product._id, variantId, snapshot }));
       } else {
         // optimistic UI: mark saved immediately
         setIsInWishlist(true);
@@ -1360,6 +1428,58 @@ const ProductDetailPage = () => {
               </div>
             )}
           </div>
+
+          <section
+            className="mb-16 rounded-[32px] px-6 py-12 md:px-10 lg:px-14 shadow-lg border"
+            style={{
+              background: 'linear-gradient(180deg, #fffaf5 0%, var(--color-bg-primary) 100%)',
+              borderColor: 'rgba(165, 99, 42, 0.18)',
+            }}
+          >
+            <div className="mx-auto max-w-4xl text-center">
+              <p
+                className="text-sm font-bold uppercase tracking-[0.28em]"
+                style={{ color: 'var(--color-accent-primary)' }}
+              >
+                Why Customers Choose Wolf Supplies
+              </p>
+              <h2 className="mt-4 text-4xl md:text-5xl font-black tracking-tight text-[var(--color-text-primary)]">
+                Quality Materials. Practical Value. Trusted UK Delivery.
+              </h2>
+              <p className="mt-5 text-base md:text-lg leading-8 text-[var(--color-text-light)]">
+                We focus on straightforward products that look right, perform reliably, and arrive ready for the job.
+              </p>
+            </div>
+
+            <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {productTrustHighlights.map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-[22px] border p-8 shadow-[0_18px_40px_rgba(36,24,16,0.08)] transition-transform duration-300 hover:-translate-y-1"
+                  style={{
+                    backgroundColor: 'var(--color-bg-primary)',
+                    borderColor: 'var(--color-border-light)',
+                  }}
+                >
+                  <div
+                    className="flex h-14 w-14 items-center justify-center rounded-2xl shadow-sm"
+                    style={{
+                      backgroundColor: 'rgba(165, 99, 42, 0.12)',
+                      color: 'var(--color-accent-primary)',
+                    }}
+                  >
+                    <i className={`${item.icon} text-2xl`}></i>
+                  </div>
+                  <h3 className="mt-6 text-2xl font-black tracking-tight text-[var(--color-text-primary)]">
+                    {item.title}
+                  </h3>
+                  <p className="mt-4 text-base font-medium leading-7 text-[var(--color-text-light)]">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
 
           {/* Related Products Component */}
           {product && (

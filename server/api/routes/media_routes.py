@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, FileResponse, Body, HTTPException
-from fastapi.staticfiles import StaticFiles
+from fastapi import APIRouter, Depends, Body, HTTPException
+from fastapi.responses import FileResponse
 from controllers.media_controller import (
     get_media_list,
     delete_media
 )
 from middleware.auth_middleware import protect, admin
+from database import db
+from bson import ObjectId
 import os
-from pathlib import Path
 
 router = APIRouter()
 
@@ -87,19 +88,67 @@ async def serve_media(filename: str):
     try:
         # Security: prevent directory traversal
         if ".." in filename or "/" in filename or "\\" in filename:
-            return {"error": "Invalid filename"}
-        
-        uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
-        file_path = os.path.join(uploads_dir, filename)
-        
+            raise HTTPException(status_code=400, detail="Invalid filename")
+
+        uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
+        collections = [
+            db.get_collection("media"),
+            db.get_collection("mediaassets"),
+        ]
+
+        media_doc = None
+        for media_coll in collections:
+            try:
+                media_doc = media_coll.find_one({"_id": ObjectId(filename)})
+            except Exception:
+                media_doc = None
+
+            if not media_doc:
+                media_doc = media_coll.find_one({
+                    "$or": [
+                        {"storage_filename": filename},
+                        {"filename": filename},
+                        {"url": f"/api/media/serve/{filename}"},
+                    ]
+                })
+
+            if media_doc:
+                break
+
+        resolved_name = None
+        resolved_path = None
+        if media_doc:
+            resolved_path = (
+                media_doc.get("storage_key_or_path")
+                or media_doc.get("storageKeyOrPath")
+            )
+            resolved_name = (
+                media_doc.get("storage_filename")
+                or os.path.basename(resolved_path or "")
+                or media_doc.get("filename")
+            )
+        else:
+            resolved_name = filename
+
+        file_path = (
+            os.path.abspath(resolved_path)
+            if resolved_path and os.path.isabs(resolved_path)
+            else os.path.abspath(os.path.join(uploads_dir, resolved_name))
+        )
+
+        if not os.path.exists(file_path) and resolved_name:
+            file_path = os.path.abspath(os.path.join(uploads_dir, os.path.basename(resolved_name)))
+
         # Verify file exists and is within uploads directory
-        file_path_real = os.path.realpath(file_path)
-        uploads_dir_real = os.path.realpath(uploads_dir)
-        
-        if not file_path_real.startswith(uploads_dir_real) or not os.path.exists(file_path_real):
-            return {"error": "File not found"}
-        
-        return FileResponse(file_path_real)
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="File not found")
+
+        if not os.path.realpath(file_path).startswith(os.path.realpath(uploads_dir)):
+            raise HTTPException(status_code=404, detail="File not found")
+
+        return FileResponse(file_path)
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"[serve_media] Error: {type(e).__name__}: {repr(e)}")
-        return {"error": "Failed to serve file"}
+        raise HTTPException(status_code=500, detail="Failed to serve file")

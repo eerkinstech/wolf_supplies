@@ -266,3 +266,55 @@
 [2026-03-19 11:26:53] [INFO] Unique index on fromUrl ensured
 [2026-03-19 11:27:21] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
 [2026-03-19 11:27:21] [INFO] Unique index on fromUrl ensured
+[2026-03-19 12:16:33] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 12:16:33] [INFO] Unique index on fromUrl ensured
+[2026-03-19 12:19:39] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 12:19:39] [INFO] Unique index on fromUrl ensured
+[2026-03-19 12:28:51] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 12:28:51] [INFO] Unique index on fromUrl ensured
+[2026-03-19 12:32:31] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 12:32:31] [INFO] Unique index on fromUrl ensured
+[2026-03-19 13:21:23] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 13:21:23] [INFO] Unique index on fromUrl ensured
+[2026-03-19 13:42:31] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 13:42:31] [INFO] Unique index on fromUrl ensured
+[2026-03-19 14:14:19] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 14:14:19] [INFO] Unique index on fromUrl ensured
+[2026-03-19 15:06:07] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 15:06:07] [INFO] Unique index on fromUrl ensured
+[2026-03-19 15:14:18] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 15:14:18] [INFO] Unique index on fromUrl ensured
+[2026-03-19 15:18:05] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 15:18:05] [INFO] Unique index on fromUrl ensured
+[2026-03-19 15:22:38] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 15:22:38] [INFO] Unique index on fromUrl ensured
+[2026-03-19 15:27:50] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 15:27:50] [INFO] Unique index on fromUrl ensured
+[2026-03-19 15:34:37] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 15:34:37] [INFO] Unique index on fromUrl ensured
+[2026-03-19 15:35:16] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 15:35:16] [INFO] Unique index on fromUrl ensured
+[2026-03-19 15:36:43] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 15:36:43] [INFO] Unique index on fromUrl ensured
+[2026-03-19 15:40:17] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 15:40:17] [INFO] Unique index on fromUrl ensured
+[2026-03-19 15:59:02] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 15:59:02] [INFO] Unique index on fromUrl ensured
+[2026-03-19 16:08:10] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 16:08:10] [INFO] Unique index on fromUrl ensured
+[2026-03-19 16:36:46] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 16:36:46] [INFO] Unique index on fromUrl ensured
+[2026-03-19 16:38:57] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 16:38:57] [INFO] Unique index on fromUrl ensured
+[2026-03-19 17:02:05] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 17:02:05] [INFO] Unique index on fromUrl ensured
+[2026-03-19 17:04:20] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 17:04:20] [INFO] Unique index on fromUrl ensured
+[2026-03-19 17:05:46] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 17:05:46] [INFO] Unique index on fromUrl ensured
+[2026-03-19 17:08:09] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 17:08:09] [INFO] Unique index on fromUrl ensured
+[2026-03-19 17:12:37] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 17:12:37] [INFO] Unique index on fromUrl ensured
+[2026-03-19 17:15:27] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 17:15:27] [INFO] Unique index on fromUrl ensured

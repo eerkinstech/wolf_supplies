@@ -81,6 +81,92 @@ async def get_coupon_by_code(code: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching coupon: {str(e)}")
 
+
+async def validate_coupon(data: dict):
+    try:
+        code = str(data.get("code", "")).strip().upper()
+        order_total = float(data.get("orderTotal", 0) or 0)
+        product_id = data.get("productId")
+        product_ids = data.get("productIds") or []
+        cart_items = data.get("cartItems") or []
+
+        if not code:
+            raise HTTPException(status_code=400, detail="Coupon code is required")
+
+        coll = db.get_collection("coupons")
+        coupon = coll.find_one({"code": code, "active": True})
+        if not coupon:
+            raise HTTPException(status_code=404, detail="Coupon not found or expired")
+
+        now = datetime.utcnow()
+        valid_from = coupon.get("valid_from")
+        expiry_date = coupon.get("expiry_date")
+
+        if isinstance(valid_from, str):
+            try:
+                valid_from = datetime.fromisoformat(valid_from.replace("Z", "+00:00")).replace(tzinfo=None)
+            except Exception:
+                valid_from = None
+        if isinstance(expiry_date, str):
+            try:
+                expiry_date = datetime.fromisoformat(expiry_date.replace("Z", "+00:00")).replace(tzinfo=None)
+            except Exception:
+                expiry_date = None
+
+        if valid_from and valid_from > now:
+            raise HTTPException(status_code=400, detail="Coupon is not yet valid")
+        if expiry_date and expiry_date < now:
+            raise HTTPException(status_code=400, detail="Coupon has expired")
+
+        max_uses = coupon.get("max_uses")
+        used_count = int(coupon.get("used_count", 0) or 0)
+        if max_uses is not None and used_count >= int(max_uses):
+            raise HTTPException(status_code=400, detail="Coupon usage limit reached")
+
+        coupon_product_id = coupon.get("product_id")
+        applicable_total = order_total
+
+        if coupon_product_id and isinstance(cart_items, list):
+            coupon_product_id = str(coupon_product_id)
+            matching_items = []
+            for item in cart_items:
+                item_product_id = item.get("product") or item.get("productId")
+                if item_product_id and str(item_product_id) == coupon_product_id:
+                    matching_items.append(item)
+
+            if not matching_items:
+                raise HTTPException(status_code=400, detail="Coupon is not valid for the products in your cart")
+
+            applicable_total = sum(
+                float(item.get("price", 0) or 0) * int(item.get("qty") or item.get("quantity") or 1)
+                for item in matching_items
+            )
+        elif coupon_product_id:
+            coupon_product_id = str(coupon_product_id)
+            product_id_match = product_id and str(product_id) == coupon_product_id
+            product_ids_match = isinstance(product_ids, list) and any(str(pid) == coupon_product_id for pid in product_ids if pid)
+            if not product_id_match and not product_ids_match:
+                raise HTTPException(status_code=400, detail="Coupon is not valid for the products in your cart")
+
+        min_purchase = float(coupon.get("min_purchase", 0) or 0)
+        if applicable_total < min_purchase:
+            raise HTTPException(status_code=400, detail=f"Minimum order value of £{min_purchase} required")
+
+        serialized = serialize_coupon(coupon) or {}
+        discount_value = float(coupon.get("discount_value", 0) or 0)
+        discount_type = coupon.get("discount_type")
+        if discount_type == "percentage":
+            discount = (applicable_total * discount_value) / 100
+        else:
+            discount = discount_value
+
+        serialized["discount"] = min(max(discount, 0), applicable_total)
+        return serialized
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error validating coupon: {str(e)}")
+
 # Create new coupon
 async def create_coupon(data: dict, user=None):
     try:

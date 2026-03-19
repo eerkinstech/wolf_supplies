@@ -4,6 +4,53 @@ import axios from 'axios';
 // Use environment variable or fallback to current origin for API
 const API = import.meta.env.VITE_API_URL || window.location.origin;
 
+const buildCartItemId = (itemLike) => {
+  if (!itemLike) return '';
+
+  const productId =
+    itemLike.product ||
+    (typeof itemLike._id === 'string' ? itemLike._id.split('|')[0] : '') ||
+    '';
+
+  const parts = [productId];
+  parts.push(`size:${itemLike.selectedSize || ''}`);
+  parts.push(`color:${itemLike.selectedColor || ''}`);
+
+  const variants = itemLike.selectedVariants && typeof itemLike.selectedVariants === 'object'
+    ? itemLike.selectedVariants
+    : {};
+  const variantParts = Object.keys(variants)
+    .sort()
+    .map((key) => `${key}:${variants[key]}`);
+  parts.push(`vars:${variantParts.join(',')}`);
+
+  return parts.join('|');
+};
+
+const normalizeCartItem = (it) => {
+  const product = it.product || null;
+  const productId = (product && (product._id || product.id)) || it.product || '';
+  const normalized = {
+    product: productId,
+    name: it.name || (product && product.name) || '',
+    price: Number(it.price ?? (product && product.price) ?? 0),
+    image: it.image || (product && (product.image || (product.images && product.images[0]))) || '',
+    variantImage: it.variantImage || null,
+    quantity: it.quantity || 1,
+    selectedVariants: it.selectedVariants || {},
+    selectedSize: it.selectedSize || null,
+    selectedColor: it.selectedColor || null,
+    variant: it.variant || null,
+    sku: it.sku || null,
+    colorCode: it.colorCode || null,
+  };
+
+  return {
+    _id: buildCartItemId({ ...normalized, _id: it._id || productId }),
+    ...normalized,
+  };
+};
+
 export const fetchCart = createAsyncThunk('cart/fetchCart', async (_, thunkAPI) => {
   const token = localStorage.getItem('token');
   try {
@@ -12,24 +59,7 @@ export const fetchCart = createAsyncThunk('cart/fetchCart', async (_, thunkAPI) 
     const url = `${API}/api/cart`;
     const res = await axios.get(url, { headers });
     const data = res.data;
-    const items = (data.items || []).map((it) => {
-      const product = it.product || null;
-      return {
-        _id: it._id || (product && (product._id || product.id)) || it.product || '',
-        product: (product && (product._id || product.id)) || it.product || '',
-        name: it.name || (product && product.name) || '',
-        price: Number(it.price ?? (product && product.price) ?? 0),
-        image: it.image || (product && (product.image || (product.images && product.images[0]))) || '',
-        variantImage: it.variantImage || null,
-        quantity: it.quantity || 1,
-        selectedVariants: it.selectedVariants || {},
-        selectedSize: it.selectedSize || null,
-        selectedColor: it.selectedColor || null,
-        variant: it.variant || null,
-        sku: it.sku || null,
-        colorCode: it.colorCode || null,
-      };
-    });
+    const items = (data.items || []).map(normalizeCartItem);
     // Store in localStorage as fallback
     localStorage.setItem('cart_fallback', JSON.stringify(items));
     return items;
@@ -104,24 +134,7 @@ export const syncCart = createAsyncThunk('cart/syncCart', async (items, thunkAPI
     const data = res.data;
 
     // Normalize returned items to client shape
-    const returned = (data.items || []).map((it) => {
-      const product = it.product || null;
-      return {
-        _id: it._id || (product && (product._id || product.id)) || it.product || '',
-        product: (product && (product._id || product.id)) || it.product || '',
-        name: it.name || (product && product.name) || '',
-        price: Number(it.price ?? (product && product.price) ?? 0),
-        image: it.image || (product && (product.image || (product.images && product.images[0]))) || '',
-        variantImage: it.variantImage || null,
-        quantity: it.quantity || 1,
-        selectedVariants: it.selectedVariants || {},
-        selectedSize: it.selectedSize || null,
-        selectedColor: it.selectedColor || null,
-        variant: it.variant || null,
-        sku: it.sku || null,
-        colorCode: it.colorCode || null,
-      };
-    });
+    const returned = (data.items || []).map(normalizeCartItem);
     // Store in localStorage as fallback
     localStorage.setItem('cart_fallback', JSON.stringify(returned));
     return returned;
@@ -182,24 +195,7 @@ export const removeItemFromServer = createAsyncThunk('cart/removeItemFromServer'
     const data = res.data;
 
     // Normalize returned items
-    const returned = (data.items || []).map((it) => {
-      const product = it.product || null;
-      return {
-        _id: it._id || (product && (product._id || product.id)) || it.product || '',
-        product: (product && (product._id || product.id)) || it.product || '',
-        name: it.name || (product && product.name) || '',
-        price: Number(it.price ?? (product && product.price) ?? 0),
-        image: it.image || (product && (product.image || (product.images && product.images[0]))) || '',
-        variantImage: it.variantImage || null,
-        quantity: it.quantity || 1,
-        selectedVariants: it.selectedVariants || {},
-        selectedSize: it.selectedSize || null,
-        selectedColor: it.selectedColor || null,
-        variant: it.variant || null,
-        sku: it.sku || null,
-        colorCode: it.colorCode || null,
-      };
-    });
+    const returned = (data.items || []).map(normalizeCartItem);
     return returned;
   } catch (err) {
     return rejectWithValue(err.message);
@@ -225,7 +221,15 @@ export const validateCartItems = createAsyncThunk('cart/validateCartItems', asyn
 
     // Check which products still exist in database
     const response = await axios.post(`${API}/api/products/validate`, { productIds });
-    const validProductIds = new Set(response.data.validProducts || response.data || []);
+    const responseData = response.data || {};
+    const validList = Array.isArray(responseData.validProducts)
+      ? responseData.validProducts
+      : Array.isArray(responseData.valid)
+        ? responseData.valid
+        : Array.isArray(responseData)
+          ? responseData
+          : [];
+    const validProductIds = new Set(validList);
 
     // Filter cart items - keep only those with valid products
     const validItems = cartItems.filter(item => {

@@ -16,9 +16,12 @@ const CheckoutPage = () => {
   const pathname = location.pathname;
   const { items, totalPrice, totalQuantity } = useSelector((state) => state.cart);
 
-  // Get coupon info - Note: In Next.js, use URL params or context instead of location.state
-  const appliedCoupon = null;
-  const discountAmount = 0;
+  // Read coupon data passed from cart page via query params
+  const searchParams = new URLSearchParams(location.search);
+  const couponCode = searchParams.get('coupon');
+  const discountParam = Number(searchParams.get('discount') || 0);
+  const appliedCoupon = couponCode ? { code: couponCode } : null;
+  const discountAmount = Number.isFinite(discountParam) ? discountParam : 0;
 
   // Helper function to check if country is UK
   const isUK = (countryValue) => {

@@ -62,7 +62,7 @@ async def get_orders_by_guest_id(guest_id: str):
         raise HTTPException(status_code=500, detail=f"Error fetching guest orders: {str(e)}")
 
 # Get single order by ID
-async def get_order_by_id(order_id: str):
+async def get_order_by_id(order_id: str, user=None):
     try:
         coll = db.get_collection("orders")
         # Try by orderId first (guest order), then by _id
@@ -71,7 +71,18 @@ async def get_order_by_id(order_id: str):
             order = coll.find_one({"_id": ObjectId(order_id)})
         if not order:
             raise HTTPException(status_code=404, detail="Order not found")
+
+        # Public lookup is allowed by orderId for guest checkout flows.
+        # If an authenticated user is provided and the order belongs to a specific user,
+        # only allow access to the owner or an admin flow handled elsewhere.
+        if user and order.get("user"):
+            order_user_id = str(order.get("user"))
+            if user.get("id") and str(user.get("id")) != order_user_id:
+                raise HTTPException(status_code=403, detail="Not authorized to view this order")
+
         return _serialize(order)
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error fetching order: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching order: {str(e)}")
@@ -164,6 +175,78 @@ async def update_payment_status(order_id: str, data: dict, user=None):
     except Exception as e:
         print(f"Error updating payment status: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error updating payment status: {str(e)}")
+
+
+async def update_order_contact(order_id: str, data: dict, user=None):
+    try:
+        coll = db.get_collection("orders")
+        order_oid = ObjectId(order_id) if ObjectId.is_valid(order_id) else None
+        query = {"_id": order_oid} if order_oid else {"orderId": order_id}
+        contact_details = data.get("contactDetails", {})
+        update = {"$set": {"contactDetails": contact_details, "updatedAt": datetime.now()}}
+        result = coll.find_one_and_update(query, update, return_document=True)
+        if not result:
+            raise HTTPException(status_code=404, detail="Order not found")
+        return _serialize(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating order contact: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating order contact: {str(e)}")
+
+
+async def update_order_shipping(order_id: str, data: dict, user=None):
+    try:
+        coll = db.get_collection("orders")
+        order_oid = ObjectId(order_id) if ObjectId.is_valid(order_id) else None
+        query = {"_id": order_oid} if order_oid else {"orderId": order_id}
+        shipping_address = data.get("shippingAddress", {})
+        update = {"$set": {"shippingAddress": shipping_address, "updatedAt": datetime.now()}}
+        result = coll.find_one_and_update(query, update, return_document=True)
+        if not result:
+            raise HTTPException(status_code=404, detail="Order not found")
+        return _serialize(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating order shipping: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating order shipping: {str(e)}")
+
+
+async def update_order_billing(order_id: str, data: dict, user=None):
+    try:
+        coll = db.get_collection("orders")
+        order_oid = ObjectId(order_id) if ObjectId.is_valid(order_id) else None
+        query = {"_id": order_oid} if order_oid else {"orderId": order_id}
+        billing_address = data.get("billingAddress", {})
+        update = {"$set": {"billingAddress": billing_address, "updatedAt": datetime.now()}}
+        result = coll.find_one_and_update(query, update, return_document=True)
+        if not result:
+            raise HTTPException(status_code=404, detail="Order not found")
+        return _serialize(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating order billing: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating order billing: {str(e)}")
+
+
+async def update_order_remarks(order_id: str, data: dict, user=None):
+    try:
+        coll = db.get_collection("orders")
+        order_oid = ObjectId(order_id) if ObjectId.is_valid(order_id) else None
+        query = {"_id": order_oid} if order_oid else {"orderId": order_id}
+        remarks = data.get("remarks", "")
+        update = {"$set": {"remarks": remarks, "updatedAt": datetime.now()}}
+        result = coll.find_one_and_update(query, update, return_document=True)
+        if not result:
+            raise HTTPException(status_code=404, detail="Order not found")
+        return _serialize(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating order remarks: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating order remarks: {str(e)}")
 
 # Delete order
 async def delete_order(order_id: str, user=None):
