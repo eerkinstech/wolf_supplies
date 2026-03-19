@@ -10,8 +10,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # MongoDB connection
-client = MongoClient(os.getenv("DATABASE_URL", "mongodb://localhost:27017"))
-db = client["ecommerce"]
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set. Please set it in your .env file.")
+client = MongoClient(DATABASE_URL)
+db = client[os.getenv("MONGO_DB_NAME", "ecommerce")]
 contact_submissions_collection = db["contact_submissions"]
 
 router = APIRouter()

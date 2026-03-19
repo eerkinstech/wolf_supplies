@@ -141,9 +141,11 @@ async def unsubscribe(data: dict = Body(...)):
         import os
         from datetime import datetime
         
-        MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-        client = MongoClient(MONGO_URI)
-        db_conn = client["ecommerce"]
+        DATABASE_URL = os.getenv("DATABASE_URL")
+        if not DATABASE_URL:
+            raise RuntimeError("DATABASE_URL environment variable is not set. Please set it in your .env file.")
+        client = MongoClient(DATABASE_URL)
+        db_conn = client[os.getenv("MONGO_DB_NAME", "ecommerce")]
         newsletter_collection = db_conn.get_collection("newsletter_subscriptions")
         
         result = newsletter_collection.update_one(

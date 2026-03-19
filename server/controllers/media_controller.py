@@ -8,7 +8,10 @@ import shutil
 from datetime import datetime
 import uuid
 
-client = MongoClient(os.getenv("DATABASE_URL", "mongodb://localhost:27017"))
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set. Please set it in your .env file.")
+client = MongoClient(DATABASE_URL)
 db = client[os.getenv("MONGO_DB_NAME", "ecommerce")]
 
 # Upload media

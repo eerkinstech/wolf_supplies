@@ -4,9 +4,11 @@ from pymongo import MongoClient
 import os
 
 # Get MongoDB connection
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-client = MongoClient(MONGO_URI)
-db = client["ecommerce"]
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set. Please set it in your .env file.")
+client = MongoClient(DATABASE_URL)
+db = client[os.getenv("MONGO_DB_NAME", "ecommerce")]
 
 # Subscribe to newsletter
 async def subscribe_newsletter(data: dict, user=None):

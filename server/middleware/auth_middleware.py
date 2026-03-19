@@ -5,9 +5,15 @@ from datetime import datetime
 from typing import Optional
 
 # Mock database lookup for user
+import os
 from pymongo import MongoClient
-client = MongoClient('mongodb://localhost:27017')
-db = client['ecommerce']
+
+# Use only .env for MongoDB connection
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set. Please set it in your .env file.")
+client = MongoClient(DATABASE_URL)
+db = client[os.getenv("MONGO_DB_NAME", "ecommerce")]
 
 async def get_user_by_id(user_id: str):
     from bson import ObjectId

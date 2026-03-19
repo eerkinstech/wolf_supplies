@@ -250,3 +250,19 @@
 [2026-03-17 14:25:01] [INFO] Unique index on fromUrl ensured
 [2026-03-17 14:54:00] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
 [2026-03-17 14:54:00] [INFO] Unique index on fromUrl ensured
+[2026-03-18 10:27:56] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-18 10:27:56] [INFO] Unique index on fromUrl ensured
+[2026-03-18 10:46:47] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-18 10:46:47] [INFO] Unique index on fromUrl ensured
+[2026-03-19 11:13:22] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['ac-k16jf4q-shard-00-01.qy8ood8.mongodb.net:27017', 'ac-k16jf4q-shard-00-00.qy8ood8.mongodb.net:27017', 'ac-k16jf4q-shard-00-02.qy8ood8.mongodb.net:27017'], document_class=dict, tz_aware=False, connect=True, appname='wolfSupplies', authsource='admin', replicaset='atlas-mt3q9f-shard-0', tls=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 11:13:23] [INFO] Unique index on fromUrl ensured
+[2026-03-19 11:19:05] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 11:19:05] [INFO] Unique index on fromUrl ensured
+[2026-03-19 11:21:22] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 11:21:22] [INFO] Unique index on fromUrl ensured
+[2026-03-19 11:22:17] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['ac-k16jf4q-shard-00-00.qy8ood8.mongodb.net:27017', 'ac-k16jf4q-shard-00-02.qy8ood8.mongodb.net:27017', 'ac-k16jf4q-shard-00-01.qy8ood8.mongodb.net:27017'], document_class=dict, tz_aware=False, connect=True, appname='wolfSupplies', authsource='admin', replicaset='atlas-mt3q9f-shard-0', tls=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 11:22:17] [INFO] Unique index on fromUrl ensured
+[2026-03-19 11:26:53] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['ac-k16jf4q-shard-00-00.qy8ood8.mongodb.net:27017', 'ac-k16jf4q-shard-00-01.qy8ood8.mongodb.net:27017', 'ac-k16jf4q-shard-00-02.qy8ood8.mongodb.net:27017'], document_class=dict, tz_aware=False, connect=True, appname='wolfSupplies', authsource='admin', replicaset='atlas-mt3q9f-shard-0', tls=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 11:26:53] [INFO] Unique index on fromUrl ensured
+[2026-03-19 11:27:21] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-19 11:27:21] [INFO] Unique index on fromUrl ensured
