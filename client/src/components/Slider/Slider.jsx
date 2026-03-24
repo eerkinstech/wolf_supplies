@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../../utils/envHelper';
 /**
  * Professional Hero Slider Component
  * Design: Text on left, image on right
@@ -63,6 +64,7 @@ const animationStyles = `
 const Slider = ({ slides = null }) => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [autoPlay, setAutoPlay] = useState(true);
+    const apiUrl = getApiUrl();
 
     // Default slides pointing to server uploads
     const defaultSlides = [
@@ -172,7 +174,7 @@ const Slider = ({ slides = null }) => {
                                         src={
                                             slide.image?.startsWith('http')
                                                 ? slide.image
-                                                : `http://localhost:5000${slide.image}`
+                                                : `${apiUrl}${slide.image}`
                                         }
                                         alt={slide.title}
                                         className="w-full h-80 md:h-96 object-cover bg-gray-200"

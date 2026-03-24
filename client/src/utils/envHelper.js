@@ -4,22 +4,15 @@
  */
 
 export const getApiUrl = () => {
-  // For Next.js (SSR):
-  if (typeof window === 'undefined') {
-    return import.meta.env.VITE_API_URL || 'http://localhost:5000';
-  }
-
-  // For Next.js (Client):
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
 
-  // Fallback for Vite (in case code is run in Vite context):
-  if (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
   }
 
-  return 'http://localhost:5000';
+  return 'http://localhost:8000';
 };
 
 export const getStripePublishableKey = () => {

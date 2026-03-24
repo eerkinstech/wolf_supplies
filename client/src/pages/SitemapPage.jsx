@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { getApiUrl } from '../utils/envHelper';
 
 // A plain XML-style sitemap page, no header/footer/layout, Google-style
 const SitemapPage = () => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const API_URL = getApiUrl();
     const [sitemapContent, setSitemapContent] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);

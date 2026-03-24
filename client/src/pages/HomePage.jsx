@@ -12,10 +12,11 @@ import FeaturesSection from '../components/Features/FeaturesSection';
 import { useDispatch } from 'react-redux';
 import { fetchProducts } from '../redux/slices/productSlice';
 import { fetchCategories } from '../redux/slices/categorySlice';
+import { getApiUrl } from '../utils/envHelper';
 
 const HomePage = () => {
   const dispatch = useDispatch();
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_URL = getApiUrl();
 
   const [featuredCategoriesConfig, setFeaturedCategoriesConfig] = useState(null);
   const [featuredProductsConfig, setFeaturedProductsConfig] = useState([]);
@@ -46,7 +47,7 @@ const HomePage = () => {
     };
 
     loadFeaturedCollections();
-  }, []);
+  }, [API_URL]);
 
   return (
     <>

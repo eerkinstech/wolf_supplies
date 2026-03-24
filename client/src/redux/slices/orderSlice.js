@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { getApiUrl } from '../../utils/envHelper';
 
-// Always use the backend directly at localhost:5000
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API = getApiUrl();
 
 console.log('[orderSlice] API base:', API, 'DEV mode:', import.meta.env.DEV);
 

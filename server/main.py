@@ -1,4 +1,7 @@
+import html
+import json
 import os
+import re
 import sys
 # Ensure project root is on sys.path so imports like 'server.models' work
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -6,7 +9,7 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 from fastapi import FastAPI, Request, HTTPException, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from dotenv import load_dotenv
@@ -27,6 +30,409 @@ except Exception as e:
 load_dotenv()
 
 app = FastAPI()
+
+HTML_TEMPLATE_CACHE = {}
+SEO_ROUTES_NOINDEX = {
+    "/cart",
+    "/checkout",
+    "/wishlist",
+    "/order-lookup",
+    "/sitemap",
+}
+STATIC_SEO_ROUTES = {
+    "/": {
+        "title": "Wolf Supplies | Premium Quality Products, Fast UK Delivery & 31-Day Returns",
+        "description": "Shop premium products at Wolf Supplies. Fast UK delivery, dependable quality, and straightforward returns.",
+        "keywords": "wolf supplies, premium products, UK delivery, ecommerce",
+        "type": "website",
+        "heading": "Wolf Supplies",
+        "body": "Shop premium products with fast UK delivery and dependable customer support.",
+    },
+    "/products": {
+        "title": "All Products | Wolf Supplies",
+        "description": "Browse the full Wolf Supplies catalogue with fast UK delivery and practical products for home, garden, and trade use.",
+        "keywords": "all products, wolf supplies, shop, UK delivery",
+        "type": "website",
+        "heading": "All Products",
+        "body": "Browse the latest Wolf Supplies products and collections.",
+    },
+    "/categories": {
+        "title": "Product Categories | Wolf Supplies",
+        "description": "Explore Wolf Supplies product categories and find the right products faster.",
+        "keywords": "product categories, wolf supplies, shop categories",
+        "type": "website",
+        "heading": "Product Categories",
+        "body": "Explore product categories across the Wolf Supplies catalogue.",
+    },
+    "/about": {
+        "title": "About Wolf Supplies",
+        "description": "Learn more about Wolf Supplies, our product standards, and our customer-first approach.",
+        "keywords": "about wolf supplies, company information",
+        "type": "website",
+        "heading": "About Wolf Supplies",
+        "body": "Learn more about Wolf Supplies and our approach to practical, high-quality products.",
+    },
+    "/contact": {
+        "title": "Contact Wolf Supplies",
+        "description": "Contact Wolf Supplies for product questions, order support, and general enquiries.",
+        "keywords": "contact wolf supplies, customer support",
+        "type": "website",
+        "heading": "Contact Wolf Supplies",
+        "body": "Get in touch with Wolf Supplies for support, sales, and order enquiries.",
+    },
+    "/payment-options": {
+        "title": "Payment Options | Wolf Supplies",
+        "description": "Review the payment options available at Wolf Supplies before placing your order.",
+        "keywords": "payment options, wolf supplies",
+        "type": "website",
+        "heading": "Payment Options",
+        "body": "Learn about the payment methods accepted by Wolf Supplies.",
+    },
+    "/order-lookup": {
+        "title": "Order Lookup | Wolf Supplies",
+        "description": "Check your order status and details with Wolf Supplies order lookup.",
+        "keywords": "order lookup, order tracking, wolf supplies",
+        "type": "website",
+        "heading": "Order Lookup",
+        "body": "Look up an existing order using your order details.",
+        "robots": "noindex, nofollow",
+    },
+    "/cart": {
+        "title": "Your Cart | Wolf Supplies",
+        "description": "Review the items in your Wolf Supplies cart before checkout.",
+        "keywords": "shopping cart, wolf supplies",
+        "type": "website",
+        "heading": "Shopping Cart",
+        "body": "Review your selected items before proceeding to checkout.",
+        "robots": "noindex, nofollow",
+    },
+    "/checkout": {
+        "title": "Checkout | Wolf Supplies",
+        "description": "Complete your Wolf Supplies purchase securely.",
+        "keywords": "checkout, secure checkout, wolf supplies",
+        "type": "website",
+        "heading": "Checkout",
+        "body": "Complete your purchase securely with Wolf Supplies.",
+        "robots": "noindex, nofollow",
+    },
+    "/wishlist": {
+        "title": "Wishlist | Wolf Supplies",
+        "description": "View your saved Wolf Supplies items.",
+        "keywords": "wishlist, saved items, wolf supplies",
+        "type": "website",
+        "heading": "Wishlist",
+        "body": "Review the items you have saved for later.",
+        "robots": "noindex, nofollow",
+    },
+}
+
+
+def get_base_site_url(request: Request) -> str:
+    site_url = (os.getenv("CLIENT_URL") or "").strip()
+    if site_url:
+        return site_url.rstrip("/")
+    return str(request.base_url).rstrip("/")
+
+
+def load_html_template(template_path: str) -> str:
+    cached = HTML_TEMPLATE_CACHE.get(template_path)
+    if cached is None:
+        with open(template_path, "r", encoding="utf-8") as f:
+            cached = f.read()
+        HTML_TEMPLATE_CACHE[template_path] = cached
+    return cached
+
+
+def strip_html_tags(value: str) -> str:
+    if not value:
+        return ""
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", value)).strip()
+
+
+def truncate_text(value: str, limit: int = 200) -> str:
+    if len(value) <= limit:
+        return value
+    return value[: limit - 3].rstrip() + "..."
+
+
+def first_non_empty(*values):
+    for value in values:
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+        if value not in (None, "", [], {}):
+            return value
+    return ""
+
+
+def make_absolute_url(base_url: str, value: str) -> str:
+    if not value:
+        return ""
+    if value.startswith("http://") or value.startswith("https://"):
+        return value
+    return f"{base_url}/{value.lstrip('/')}"
+
+
+def serialize_for_json(value):
+    if hasattr(value, "isoformat"):
+        try:
+            return value.isoformat()
+        except Exception:
+            return str(value)
+    if isinstance(value, dict):
+        return {k: serialize_for_json(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [serialize_for_json(v) for v in value]
+    return value
+
+
+def build_seo_head(metadata: dict) -> str:
+    title = html.escape(metadata["title"])
+    description = html.escape(metadata["description"])
+    canonical = html.escape(metadata["canonical"])
+    keywords = html.escape(metadata.get("keywords", ""))
+    og_image = html.escape(metadata.get("image", ""))
+    robots = html.escape(metadata.get("robots", "index, follow"))
+    site_name = html.escape(metadata.get("site_name", "Wolf Supplies"))
+    page_type = html.escape(metadata.get("type", "website"))
+    head_parts = [
+        f"<title>{title}</title>",
+        f'<meta name="description" content="{description}">',
+        f'<meta name="robots" content="{robots}">',
+        f'<link rel="canonical" href="{canonical}">',
+        f'<meta property="og:title" content="{title}">',
+        f'<meta property="og:description" content="{description}">',
+        f'<meta property="og:url" content="{canonical}">',
+        f'<meta property="og:type" content="{page_type}">',
+        f'<meta property="og:site_name" content="{site_name}">',
+        f'<meta name="twitter:card" content="summary_large_image">',
+        f'<meta name="twitter:title" content="{title}">',
+        f'<meta name="twitter:description" content="{description}">',
+    ]
+    if keywords:
+        head_parts.append(f'<meta name="keywords" content="{keywords}">')
+    if og_image:
+        head_parts.append(f'<meta property="og:image" content="{og_image}">')
+        head_parts.append(f'<meta name="twitter:image" content="{og_image}">')
+    if metadata.get("structured_data"):
+        structured_json = json.dumps(serialize_for_json(metadata["structured_data"]), ensure_ascii=False)
+        head_parts.append(f'<script type="application/ld+json">{structured_json}</script>')
+    return "\n  ".join(head_parts)
+
+
+def build_seo_snapshot(metadata: dict) -> str:
+    heading = html.escape(metadata.get("heading") or metadata["title"])
+    body = html.escape(metadata.get("body") or metadata["description"])
+    extra = metadata.get("extra_html", "")
+    return (
+        '<div id="seo-route-preview" data-seo-rendered="true" '
+        'style="position:absolute;left:-99999px;top:auto;width:1px;height:1px;overflow:hidden;">'
+        f"<main><h1>{heading}</h1><p>{body}</p>{extra}</main></div>"
+    )
+
+
+def get_collection_doc(collection_name: str, query: dict):
+    coll = db.get_collection(collection_name)
+    return coll.find_one(query)
+
+
+def build_product_seo(slug: str, base_url: str, path: str) -> dict | None:
+    product = get_collection_doc("products", {"slug": slug})
+    if not product:
+        return None
+
+    name = first_non_empty(product.get("metaTitle"), product.get("name"), "Product")
+    description = first_non_empty(
+        product.get("metaDescription"),
+        strip_html_tags(product.get("description", "")),
+        f"Buy {product.get('name', 'this product')} online from Wolf Supplies.",
+    )
+    image = ""
+    images = product.get("images") or []
+    if images:
+        first_image = images[0]
+        if isinstance(first_image, dict):
+            image = first_non_empty(
+                first_image.get("url"),
+                first_image.get("secure_url"),
+                first_image.get("path"),
+                first_image.get("src"),
+            )
+        elif isinstance(first_image, str):
+            image = first_image
+
+    price = first_non_empty(product.get("price"), "")
+    stock = first_non_empty(product.get("stock"), 0)
+    extra_html = ""
+    if price != "":
+        extra_html += f"<p>Price: {html.escape(str(price))}</p>"
+    extra_html += f"<p>Availability: {'In stock' if stock and stock > 0 else 'Out of stock'}</p>"
+
+    return {
+        "title": f"{name} | Wolf Supplies",
+        "description": truncate_text(description, 160),
+        "keywords": first_non_empty(product.get("metaKeywords"), ""),
+        "canonical": f"{base_url}{path}",
+        "image": make_absolute_url(base_url, image),
+        "type": "product",
+        "heading": first_non_empty(product.get("name"), name),
+        "body": truncate_text(strip_html_tags(product.get("description", "")) or description, 220),
+        "extra_html": extra_html,
+        "structured_data": {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "name": first_non_empty(product.get("name"), name),
+            "description": truncate_text(strip_html_tags(product.get("description", "")) or description, 500),
+            "url": f"{base_url}{path}",
+            "image": [make_absolute_url(base_url, image)] if image else [],
+            "brand": {"@type": "Brand", "name": "Wolf Supplies"},
+            "offers": {
+                "@type": "Offer",
+                "priceCurrency": "GBP",
+                "price": str(price) if price != "" else "",
+                "availability": "https://schema.org/InStock" if stock and stock > 0 else "https://schema.org/OutOfStock",
+                "url": f"{base_url}{path}",
+            },
+        },
+    }
+
+
+def build_category_seo(slug: str, base_url: str, path: str) -> dict | None:
+    category = get_collection_doc("categories", {"slug": slug})
+    if not category:
+        return None
+
+    name = first_non_empty(category.get("metaTitle"), category.get("name"), "Category")
+    description = first_non_empty(
+        category.get("metaDescription"),
+        strip_html_tags(category.get("description", "")),
+        f"Shop {category.get('name', 'this category')} products at Wolf Supplies.",
+    )
+    return {
+        "title": f"{name} | Wolf Supplies",
+        "description": truncate_text(description, 160),
+        "keywords": first_non_empty(category.get("metaKeywords"), ""),
+        "canonical": f"{base_url}{path}",
+        "image": make_absolute_url(base_url, first_non_empty(category.get("image"), "")),
+        "type": "website",
+        "heading": first_non_empty(category.get("name"), name),
+        "body": truncate_text(strip_html_tags(category.get("description", "")) or description, 220),
+        "structured_data": {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": first_non_empty(category.get("name"), name),
+            "description": truncate_text(strip_html_tags(category.get("description", "")) or description, 500),
+            "url": f"{base_url}{path}",
+        },
+    }
+
+
+def build_content_page_seo(collection_name: str, slug: str, base_url: str, path: str) -> dict | None:
+    page = get_collection_doc(collection_name, {"slug": slug, "isPublished": {"$ne": False}})
+    if not page:
+        return None
+
+    title = first_non_empty(page.get("metaTitle"), page.get("title"), "Wolf Supplies")
+    description = first_non_empty(
+        page.get("metaDescription"),
+        strip_html_tags(page.get("description", "")),
+        strip_html_tags(page.get("content", "")),
+        f"Read more on Wolf Supplies: {page.get('title', 'Page')}.",
+    )
+    return {
+        "title": f"{title} | Wolf Supplies" if "wolf supplies" not in title.lower() else title,
+        "description": truncate_text(description, 160),
+        "keywords": first_non_empty(page.get("metaKeywords"), ""),
+        "canonical": f"{base_url}{path}",
+        "type": "article" if collection_name == "policies" else "website",
+        "heading": first_non_empty(page.get("title"), title),
+        "body": truncate_text(strip_html_tags(page.get("content", "")) or description, 260),
+        "structured_data": {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": first_non_empty(page.get("title"), title),
+            "description": truncate_text(description, 500),
+            "url": f"{base_url}{path}",
+        },
+    }
+
+
+def build_route_seo(path: str, request: Request) -> dict:
+    base_url = get_base_site_url(request)
+
+    if path.startswith("/admin"):
+        return {
+            "title": "Admin | Wolf Supplies",
+            "description": "Wolf Supplies admin area.",
+            "keywords": "",
+            "canonical": f"{base_url}{path}",
+            "type": "website",
+            "heading": "Admin",
+            "body": "Wolf Supplies administration area.",
+            "robots": "noindex, nofollow",
+        }
+
+    if path.startswith("/product/"):
+        slug = path.split("/product/", 1)[1].strip("/")
+        seo = build_product_seo(slug, base_url, path)
+        if seo:
+            return seo
+
+    if path.startswith("/category/"):
+        slug = path.split("/category/", 1)[1].strip("/")
+        seo = build_category_seo(slug, base_url, path)
+        if seo:
+            return seo
+
+    if path.startswith("/policies/"):
+        slug = path.split("/policies/", 1)[1].strip("/")
+        seo = build_content_page_seo("policies", slug, base_url, path)
+        if seo:
+            return seo
+
+    if path.startswith("/order/"):
+        return {
+            "title": "Order Details | Wolf Supplies",
+            "description": "Order details page.",
+            "keywords": "",
+            "canonical": f"{base_url}{path}",
+            "type": "website",
+            "heading": "Order Details",
+            "body": "Order details for an existing purchase.",
+            "robots": "noindex, nofollow",
+        }
+
+    if path in STATIC_SEO_ROUTES:
+        static_meta = STATIC_SEO_ROUTES[path].copy()
+        static_meta["canonical"] = f"{base_url}{path}" if path != "/" else base_url
+        static_meta.setdefault("robots", "index, follow")
+        static_meta.setdefault("site_name", "Wolf Supplies")
+        return static_meta
+
+    slug = path.strip("/")
+    if slug:
+        seo = build_content_page_seo("pages", slug, base_url, path)
+        if seo:
+            return seo
+
+    return {
+        "title": "Wolf Supplies | Premium Quality Products, Fast UK Delivery & 31-Day Returns",
+        "description": "Shop premium products at Wolf Supplies with fast UK delivery.",
+        "keywords": "wolf supplies, premium products, UK delivery",
+        "canonical": f"{base_url}{path}" if path != "/" else base_url,
+        "type": "website",
+        "heading": "Wolf Supplies",
+        "body": "Wolf Supplies online store.",
+        "robots": "noindex, nofollow" if path in SEO_ROUTES_NOINDEX else "index, follow",
+    }
+
+
+def render_index_html(index_html: str, metadata: dict) -> str:
+    rendered = re.sub(r"<title>.*?</title>", "", index_html, count=1, flags=re.S)
+    rendered = re.sub(r'\s*<meta name="description"[^>]*>\s*', "", rendered, count=1, flags=re.I)
+    rendered = re.sub(r'\s*<meta name="keywords"[^>]*>\s*', "", rendered, count=1, flags=re.I)
+    rendered = rendered.replace("<head>", f"<head>\n  {build_seo_head(metadata)}", 1)
+    snapshot_html = build_seo_snapshot(metadata)
+    return rendered.replace('<div id="root"></div>', f'{snapshot_html}\n  <div id="root"></div>', 1)
 
 # Initialize default roles on startup
 async def init_default_roles():
@@ -52,6 +458,7 @@ app.add_middleware(
         "http://127.0.0.1:3000",  # Alternative localhost
         "http://localhost:5000",  # Backend server (for testing with tools like Postman)
         "http://localhost:8000",
+        "https://wolfsupplies.co.uk",  # Production site
     ],
     allow_credentials=True,  # REQUIRED for Authorization header (login, tokens)
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
@@ -74,6 +481,7 @@ def get_cors_headers(request: Request):
         "http://127.0.0.1:3000",
         "http://localhost:5000",
         "http://localhost:8000",
+        "https://wolfsupplies.co.uk",
     ]
     
     if origin in allowed_origins:
@@ -689,12 +1097,13 @@ if os.path.exists(uploads_folder):
 
 # Now mount React assets and catch-all (AFTER all API endpoints)
 dist_folder = os.path.abspath("../client/dist")
+client_folder = os.path.abspath("../client")
 
 if os.path.exists(dist_folder):
     app.mount("/assets", StaticFiles(directory=os.path.join(dist_folder, "assets")), name="assets")
 
     @app.get("/{full_path:path}")
-    async def serve_react_app(full_path: str):
+    async def serve_react_app(full_path: str, request: Request):
         # Never serve React HTML for API or uploads paths – those must be handled by FastAPI routes
         if full_path.startswith("api") or full_path.startswith("uploads"):
             raise HTTPException(status_code=404, detail="Not Found")
@@ -705,8 +1114,16 @@ if os.path.exists(dist_folder):
         if os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path)
 
-        # Serve index.html for frontend routing
-        return FileResponse(os.path.join(dist_folder, "index.html"))
+        request_path = "/" if not full_path else f"/{full_path.strip('/')}"
+        metadata = build_route_seo(request_path, request)
+        use_vite_template = request.headers.get("x-use-vite-template") == "1"
+        template_path = (
+            os.path.join(client_folder, "index.html")
+            if use_vite_template
+            else os.path.join(dist_folder, "index.html")
+        )
+        rendered_html = render_index_html(load_html_template(template_path), metadata)
+        return HTMLResponse(content=rendered_html)
 
 # =============================================================================
 # START SERVER

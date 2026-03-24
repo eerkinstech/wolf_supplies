@@ -5,13 +5,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import toast from 'react-hot-toast';
 import { useMetaTags } from '../hooks/useMetaTags';
 import Layout from '../components/Layout/Layout';
+import { getApiUrl } from '../utils/envHelper';
 
 import { Helmet } from 'react-helmet-async';
 
 const DynamicPage = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const API_URL = getApiUrl();
     const [page, setPage] = useState(null);
     const [loading, setLoading] = useState(true);
 
