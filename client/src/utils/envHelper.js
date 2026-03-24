@@ -12,7 +12,7 @@ export const getApiUrl = () => {
     return window.location.origin;
   }
 
-  return 'https://wolfsupplies.co.uk';
+  return 'http://localhost:8000';
 };
 
 export const getStripePublishableKey = () => {

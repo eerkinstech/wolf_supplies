@@ -26,7 +26,7 @@ const seoHtmlProxyPlugin = () => ({
       }
 
       try {
-        const response = await fetch(`https://wolfsupplies.co.uk${url}`, {
+        const response = await fetch(`http://localhost:8000${url}`, {
           headers: {
             'x-use-vite-template': '1',
           },
@@ -55,11 +55,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://wolfsupplies.co.uk',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'https://wolfsupplies.co.uk',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
     },
