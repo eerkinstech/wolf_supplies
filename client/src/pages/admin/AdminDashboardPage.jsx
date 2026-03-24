@@ -130,6 +130,16 @@ const AdminDashboardPage = () => {
   const calculatedStats = useMemo(() => {
     if (!products) return { products: 0, categories: 0, totalValue: 0, orders: 0, revenue: 0 };
 
+    const getOrderGrossSale = (order) => {
+      const orderItems = Array.isArray(order.orderItems) ? order.orderItems : [];
+      const itemsTotal = orderItems.reduce(
+        (sum, item) => sum + ((item.price || 0) * (item.qty || 1)),
+        0
+      );
+      const orderDiscount = Number(order.discountAmount || 0);
+      return Math.max(0, itemsTotal - orderDiscount);
+    };
+
     // Inventory value calculation
     const totalValue = products.reduce((sum, p) => {
       if (p.variantCombinations && p.variantCombinations.length > 0) {
@@ -166,7 +176,10 @@ const AdminDashboardPage = () => {
       return true;
     });
 
-    const totalRevenue = (filteredOrders || []).reduce((r, o) => r + (o.totalPrice || 0), 0);
+    const totalRevenue = (filteredOrders || []).reduce(
+      (revenue, order) => revenue + getOrderGrossSale(order),
+      0
+    );
 
     return {
       products: products.length,

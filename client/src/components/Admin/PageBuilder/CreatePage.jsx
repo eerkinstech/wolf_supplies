@@ -7,10 +7,10 @@ import RichTextEditor from '../../RichTextEditor/RichTextEditor';
 import axios from 'axios';
 
 // In dev use relative paths so Vite proxy forwards `/api` to the backend.
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API = import.meta.env.VITE_API_URL || '';
 
 // Helper: axios request, retry against explicit backend if dev server returns HTML
-const FALLBACK_API = 'http://localhost:8000';
+const FALLBACK_API = typeof window !== 'undefined' ? window.location.origin : '';
 async function axiosJsonWithFallback(method, url, config = {}) {
     const doReq = async (u) => {
         try {

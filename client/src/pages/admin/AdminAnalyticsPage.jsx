@@ -138,6 +138,16 @@ const AdminAnalyticsPage = () => {
 
   useEffect(() => {
     if (products && orders && orders.length > 0) {
+      const getOrderGrossSale = (order) => {
+        const orderItems = Array.isArray(order.orderItems) ? order.orderItems : [];
+        const itemsTotal = orderItems.reduce(
+          (sum, item) => sum + ((item.price || 0) * (item.qty || 1)),
+          0
+        );
+        const orderDiscount = Number(order.discountAmount || 0);
+        return Math.max(0, itemsTotal - orderDiscount);
+      };
+
       // Filter orders by date range
       const toYMD = (d) => {
         if (!d) return null;
@@ -163,7 +173,7 @@ const AdminAnalyticsPage = () => {
       });
 
       // Calculate sales data
-      const totalSales = filteredOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+      const totalSales = filteredOrders.reduce((sum, order) => sum + getOrderGrossSale(order), 0);
       const totalOrders = filteredOrders.length;
       const avgOrderValue = totalOrders > 0 ? (totalSales / totalOrders).toFixed(2) : 0;
 
