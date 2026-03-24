@@ -46,8 +46,8 @@ Disallow: /api/
 Crawl-delay: 1
 
 # Sitemaps (on API subdomain)
-Sitemap: https://api.wolfsupplies.co.uk/api/sitemap.xml
-Sitemap: https://api.wolfsupplies.co.uk/api/sitemap-products.xml
+Sitemap: https://wolfsupplies.co.uk/api/sitemap.xml
+Sitemap: https://wolfsupplies.co.uk/api/sitemap-products.xml
 
 # GMC Feed also on API subdomain
-# Format: https://api.wolfsupplies.co.uk/api/gmc-feed.xml
+# Format: https://wolfsupplies.co.uk/api/gmc-feed.xml

@@ -30,6 +30,24 @@ def abs_url(path: str) -> str:
     return path if path.startswith("http") else f"{SITE_URL}{path}"
 
 
+def extract_image_url(value) -> str:
+    if not value:
+        return ""
+    if isinstance(value, str):
+        return abs_url(value)
+    if isinstance(value, dict):
+        return abs_url(
+            value.get("url")
+            or value.get("secure_url")
+            or value.get("secureUrl")
+            or value.get("path")
+            or value.get("src")
+            or value.get("image")
+            or ""
+        )
+    return ""
+
+
 def variant_key(values: dict) -> str:
     parts = []
     for key in sorted((values or {}).keys()):
@@ -51,6 +69,20 @@ def xml_tag(name: str, value, cdata: bool = False) -> str:
     return f"<{name}>{escape_xml(text)}</{name}>"
 
 
+def xml_product_detail(section_name: str, attribute_name: str, attribute_value) -> str:
+    if attribute_value is None or str(attribute_value).strip() == "":
+        return ""
+    return "\n".join(
+        [
+            "<g:product_detail>",
+            xml_tag("g:section_name", section_name),
+            xml_tag("g:attribute_name", attribute_name),
+            xml_tag("g:attribute_value", attribute_value),
+            "</g:product_detail>",
+        ]
+    )
+
+
 def build_title(base_name: str, values: dict) -> str:
     variant_parts = []
     for key, value in (values or {}).items():
@@ -62,23 +94,34 @@ def build_title(base_name: str, values: dict) -> str:
 
 def choose_main_image(product: dict, variant: dict | None = None) -> str:
     if variant and variant.get("image"):
-        return abs_url(str(variant.get("image")))
+        image = extract_image_url(variant.get("image"))
+        if image:
+            return image
     if product.get("image"):
-        return abs_url(str(product.get("image")))
+        image = extract_image_url(product.get("image"))
+        if image:
+            return image
     images = product.get("images") or []
     if isinstance(images, list) and images:
-        return abs_url(str(images[0]))
+        image = extract_image_url(images[0])
+        if image:
+            return image
     return f"{SITE_URL}/default-product-image.jpg"
 
 
 def additional_images(product: dict, main_image: str, variant: dict | None = None) -> list[str]:
     images = []
     if variant and variant.get("image"):
-        images.append(abs_url(str(variant.get("image"))))
+        image = extract_image_url(variant.get("image"))
+        if image:
+            images.append(image)
     raw_images = product.get("images") or []
     if not isinstance(raw_images, list):
         raw_images = [raw_images] if raw_images else []
-    images.extend(abs_url(str(img)) for img in raw_images if img)
+    for img in raw_images:
+        image = extract_image_url(img)
+        if image:
+            images.append(image)
 
     seen = set()
     out = []
@@ -182,9 +225,7 @@ async def generate_gmc_feed():
                     for key, value in values.items():
                         if value is None or str(value).strip() == "":
                             continue
-                        item_xml.append(
-                            xml_tag("g:product_detail", f"{key}: {value}")
-                        )
+                        item_xml.append(xml_product_detail("Variant", key, value))
 
                     item_xml.append("    </item>")
                     items_xml.append("\n".join(part for part in item_xml if part))
@@ -227,7 +268,7 @@ async def generate_gmc_feed():
   </channel>
 </rss>"""
 
-        return Response(content=feed, media_type="application/xml")
+        return Response(content=feed, media_type="application/xml; charset=utf-8")
     except HTTPException:
         raise
     except Exception as e:

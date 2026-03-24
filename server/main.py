@@ -847,6 +847,32 @@ try:
 except Exception as e:
     print("Warning: settings direct endpoints not loaded:", e)
 
+try:
+    from controllers.sitemap_controller import generate_sitemap
+
+    @app.get("/sitemap.xml")
+    async def public_sitemap_xml():
+        return await generate_sitemap()
+
+    @app.get("/sitemap")
+    async def public_sitemap():
+        return await generate_sitemap()
+except Exception as e:
+    print("Warning: public sitemap endpoints not loaded:", e)
+
+try:
+    from controllers.gmc_feed_controller import generate_gmc_feed
+
+    @app.get("/gmc-feed")
+    async def public_gmc_feed():
+        return await generate_gmc_feed()
+
+    @app.get("/gmc-feed.xml")
+    async def public_gmc_feed_xml():
+        return await generate_gmc_feed()
+except Exception as e:
+    print("Warning: public GMC feed endpoints not loaded:", e)
+
 # Add direct login endpoint
 @app.get("/api/users/profile")
 async def api_user_profile(request: Request):
