@@ -413,11 +413,11 @@ const ProductDetailPage = () => {
 
     const normalizedProductImages = buildOrderedProductImages(product);
 
-    // If matched variant has custom image, include it first then product images (normalized)
+    // If matched variant has a custom image, show it as the primary gallery image.
     if (matched && matched.image) {
       const variantImg = normalizeImageValue(matched.image);
       if (variantImg) {
-        return dedupeImages([...normalizedProductImages, variantImg]);
+        return dedupeImages([variantImg, ...normalizedProductImages]);
       }
     }
 
@@ -800,7 +800,7 @@ const ProductDetailPage = () => {
     });
 
     const data = await res.json();
-    
+
     if (!res.ok) {
       const errorMsg = data?.detail || data?.message || 'Failed to submit review';
       const err = new Error(errorMsg);

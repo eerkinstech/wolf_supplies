@@ -75,7 +75,7 @@ const LoadingFallback = () => (
 
 const App = () => {
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin') && location.pathname !== '/admin/login';
+  const isAdminRoute = location.pathname.startsWith('/admin');
   const isSitemapRoute = location.pathname === '/sitemap';
 
   return (
@@ -136,8 +136,8 @@ const App = () => {
             <Route path="*" element={<NotFound404Page />} />
           </Routes>
           {!isAdminRoute && !isSitemapRoute && <Footer />}
-          {/* Only show ChatButton if not on sitemap route */}
-          {!isSitemapRoute && <ChatButton />}
+          {/* Only show ChatButton on storefront routes */}
+          {!isAdminRoute && !isSitemapRoute && <ChatButton />}
           <Toaster position="top-right" />
         </Suspense>
       </AuthProvider>

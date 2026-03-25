@@ -1,0 +1,4 @@
+[2026-03-25 11:53:07] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-25 11:53:07] [INFO] Unique index on fromUrl ensured
+[2026-03-25 15:57:08] [INFO] redirectController initialized with collection: Collection(Database(MongoClient(host=['localhost:27017'], document_class=dict, tz_aware=False, connect=True, serverselectiontimeoutms=10000), 'ecommerce'), 'redirects')
+[2026-03-25 15:57:08] [INFO] Unique index on fromUrl ensured

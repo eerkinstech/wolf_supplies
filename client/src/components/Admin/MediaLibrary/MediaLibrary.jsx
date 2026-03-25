@@ -12,16 +12,13 @@ const MediaLibrary = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState(''); // 'image', 'video', or ''
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [totalMedia, setTotalMedia] = useState(0);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [deletingBulk, setDeletingBulk] = useState(false);
-
-  const limit = 12;
+  const [uploading, setUploading] = useState(false);
 
   // Read token on client only (module can be evaluated on server)
   useEffect(() => {
@@ -35,12 +32,11 @@ const MediaLibrary = () => {
   }, []);
 
   // Fetch media from API
-  const fetchMedia = async (page = 1, search = '', type = '') => {
+  const fetchMedia = async (search = '', type = '') => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      params.append('page', page);
-      params.append('limit', limit);
+      params.append('all', 'true');
       if (search) params.append('search', search);
       if (type) params.append('type', type);
 
@@ -50,9 +46,11 @@ const MediaLibrary = () => {
 
       if (response.data.success) {
         setMedia(response.data.assets || []);
-        setTotalPages(response.data.pagination?.pages || 1);
         setTotalMedia(response.data.pagination?.total || 0);
-        setCurrentPage(response.data.pagination?.page || 1);
+        setSelectedIds((prev) => {
+          const visibleIds = new Set((response.data.assets || []).map((asset) => asset._id));
+          return new Set([...prev].filter((id) => visibleIds.has(id)));
+        });
       }
     } catch (err) {
       console.error('Failed to fetch media:', err);
@@ -65,20 +63,48 @@ const MediaLibrary = () => {
   // Initial fetch
   useEffect(() => {
     if (!token) return;
-    fetchMedia(1, searchTerm, filterType);
+    fetchMedia(searchTerm, filterType);
   }, [token]);
 
   // Fetch media when search or filter changes
   const handleSearch = (value) => {
     setSearchTerm(value);
-    setCurrentPage(1);
-    fetchMedia(1, value, filterType);
+    fetchMedia(value, filterType);
   };
 
   const handleFilterType = (type) => {
     setFilterType(type);
-    setCurrentPage(1);
-    fetchMedia(1, searchTerm, type);
+    fetchMedia(searchTerm, type);
+  };
+
+  const handleUploadMedia = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    try {
+      setUploading(true);
+
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        await axios.post(`${API}/api/upload`, formData, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      }
+
+      toast.success(`${files.length} media item${files.length > 1 ? 's' : ''} uploaded successfully`);
+      await fetchMedia(searchTerm, filterType);
+    } catch (err) {
+      console.error('Failed to upload media:', err);
+      toast.error(err.response?.data?.error || 'Failed to upload media');
+    } finally {
+      e.target.value = '';
+      setUploading(false);
+    }
   };
 
   // Delete media
@@ -91,7 +117,7 @@ const MediaLibrary = () => {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       toast.success('Media deleted successfully');
-      setMedia(media.filter((m) => m._id !== mediaId));
+      await fetchMedia(searchTerm, filterType);
       setShowPreview(false);
       setSelectedMedia(null);
     } catch (err) {
@@ -144,8 +170,8 @@ const MediaLibrary = () => {
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
       toast.success(`Deleted ${count} media item${count > 1 ? 's' : ''}`);
-      setMedia(media.filter((m) => !selectedIds.has(m._id)));
       setSelectedIds(new Set());
+      await fetchMedia(searchTerm, filterType);
       setShowPreview(false);
       setSelectedMedia(null);
     } catch (err) {
@@ -183,9 +209,24 @@ const MediaLibrary = () => {
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Media Library</h1>
-        <p className="text-gray-600">Manage all uploaded images and videos</p>
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Media Library</h1>
+          <p className="text-gray-600">Manage all uploaded images and videos</p>
+        </div>
+
+        <label className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-gray-900 hover:bg-black text-white rounded-lg font-semibold cursor-pointer transition disabled:opacity-50">
+          <i className={`fas ${uploading ? 'fa-spinner fa-spin' : 'fa-cloud-upload-alt'}`}></i>
+          <span>{uploading ? 'Uploading...' : 'Upload Media'}</span>
+          <input
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            onChange={handleUploadMedia}
+            disabled={uploading}
+            className="hidden"
+          />
+        </label>
       </div>
 
       {/* Search & Filter Bar */}
@@ -247,6 +288,13 @@ const MediaLibrary = () => {
           {/* Selection & Bulk Delete */}
           {media.length > 0 && (
             <div className="flex items-center gap-3">
+              <button
+                onClick={handleSelectAll}
+                className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg font-semibold transition hover:bg-gray-200 flex items-center gap-2"
+              >
+                <i className={`fas ${selectedIds.size === media.length ? 'fa-square-minus' : 'fa-check-square'}`}></i>
+                {selectedIds.size === media.length ? 'Clear Selection' : 'Select All'}
+              </button>
               {selectedIds.size > 0 && (
                 <>
                   <span className="text-sm font-semibold text-gray-700">
@@ -357,45 +405,12 @@ const MediaLibrary = () => {
                       {asset.filename}
                     </p>
                     <p className="text-xs text-gray-600">{formatFileSize(asset.size)}</p>
+                    <p className="text-[11px] text-gray-500">{formatDate(asset.createdAt)}</p>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <button
-                onClick={() => fetchMedia(Math.max(1, currentPage - 1), searchTerm, filterType)}
-                disabled={currentPage === 1 || loading}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                <i className="fas fa-chevron-left"></i>
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => fetchMedia(page, searchTerm, filterType)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition ${currentPage === page
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    }`}
-                >
-                  {page}
-                </button>
-              ))}
-
-              <button
-                onClick={() => fetchMedia(Math.min(totalPages, currentPage + 1), searchTerm, filterType)}
-                disabled={currentPage === totalPages || loading}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                <i className="fas fa-chevron-right"></i>
-              </button>
-            </div>
-          )}
         </>
       )}
 

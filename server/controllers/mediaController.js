@@ -86,10 +86,12 @@ const getMediaAssets = async (req, res) => {
     const {
       page = 1,
       limit = 20,
+      all = 'false',
       type, // 'image' | 'video' | undefined (all)
       search, // search in filename
       sort = '-createdAt', // sort field
     } = req.query;
+    const shouldReturnAll = all === 'true' || String(limit).toLowerCase() === 'all';
 
     // Build query
     let query = MediaAsset.find().active();
@@ -104,14 +106,20 @@ const getMediaAssets = async (req, res) => {
 
     // Count total for pagination
     const total = await MediaAsset.countDocuments(query);
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const parsedLimit = Math.max(parseInt(limit, 10) || 20, 1);
+    const skip = shouldReturnAll ? 0 : (parsedPage - 1) * parsedLimit;
 
-    // Execute query with sort and pagination
-    const assets = await query
+    let assetQuery = query
       .sort(sort)
-      .skip(skip)
-      .limit(parseInt(limit))
       .select('_id filename mime type url thumbnailUrl width height duration size createdAt');
+
+    if (!shouldReturnAll) {
+      assetQuery = assetQuery.skip(skip).limit(parsedLimit);
+    }
+
+    const assets = await assetQuery;
+    const pageCount = shouldReturnAll ? 1 : Math.max(Math.ceil(total / parsedLimit), 1);
 
     res.json({
       success: true,
@@ -129,10 +137,10 @@ const getMediaAssets = async (req, res) => {
         createdAt: asset.createdAt,
       })),
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: shouldReturnAll ? 1 : parsedPage,
+        limit: shouldReturnAll ? total : parsedLimit,
         total,
-        pages: Math.ceil(total / parseInt(limit)),
+        pages: pageCount,
       },
     });
   } catch (error) {

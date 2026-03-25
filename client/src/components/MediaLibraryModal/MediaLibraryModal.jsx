@@ -13,21 +13,18 @@ const MediaLibraryModal = ({
   groupImages = [],
   uploadImageToServer,
   title = 'Select Image',
-  subtitle = 'Choose from product images or media library',
-  defaultTab = 'product'
+  subtitle = 'Choose from product images or media library'
 }) => {
   const API = import.meta.env.VITE_API_URL || '';
 
   // States
   const [token, setToken] = useState('');
   const [mediaAssets, setMediaAssets] = useState([]);
+  const [uploadedAssets, setUploadedAssets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('image');
-  const [activeTab, setActiveTab] = useState(defaultTab);
-  const [mediaPage, setMediaPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
   // Get token from localStorage on client side only
   useEffect(() => {
@@ -41,14 +38,27 @@ const MediaLibraryModal = ({
   const abortControllerRef = useRef(null);
 
   // Fetch media library with proper deduplication
-  const fetchMediaLibrary = useCallback(async (page, filter, search) => {
+  const resolveUrl = useCallback((url) => {
+    if (!url) return '';
+    return url.startsWith('http') ? url : `${API}${url}`;
+  }, [API]);
+
+  const buildLocalAsset = useCallback((url, source, index) => ({
+    _id: `${source}-${index}-${url}`,
+    rawUrl: url,
+    previewUrl: resolveUrl(url),
+    filename: url.split('/').pop() || `${source}-${index + 1}`,
+    type: 'image',
+    source,
+  }), [resolveUrl]);
+
+  const fetchMediaLibrary = useCallback(async (filter, search) => {
     try {
       setLoading(true);
       abortControllerRef.current = new AbortController();
 
       const params = new URLSearchParams();
-      params.append('page', page);
-      params.append('limit', 24);
+      params.append('all', 'true');
       params.append('type', filter);
       if (search) params.append('search', search);
 
@@ -58,11 +68,14 @@ const MediaLibraryModal = ({
       });
 
       if (response.data.success) {
-        setMediaAssets(response.data.assets || []);
-        setTotalPages(response.data.pagination?.pages || 1);
+        setMediaAssets((response.data.assets || []).map((asset) => ({
+          ...asset,
+          rawUrl: asset.url,
+          previewUrl: resolveUrl(asset.url),
+          source: 'library',
+        })));
       } else {
         setMediaAssets([]);
-        setTotalPages(1);
       }
     } catch (err) {
       if (err.name !== 'CanceledError') {
@@ -72,38 +85,34 @@ const MediaLibraryModal = ({
     } finally {
       setLoading(false);
     }
-  }, [API, token]);
+  }, [API, resolveUrl, token]);
 
   // Effect to handle modal open/close state
   useEffect(() => {
     if (!show) {
-      setActiveTab(defaultTab);
-      setMediaPage(1);
       setSearchTerm('');
       setFilterType('image');
+      setUploadedAssets([]);
       lastFetchRef.current = null;
-    } else {
-      // When modal opens, reset to default tab
-      setActiveTab(defaultTab);
     }
-  }, [show, defaultTab]);
+  }, [show]);
 
   // Effect to handle media library fetching
   useEffect(() => {
-    if (!show || activeTab !== 'media') return;
+    if (!show) return;
 
-    const fetchKey = `${mediaPage}-${filterType}-${searchTerm}`;
+    const fetchKey = `${filterType}-${searchTerm}`;
     if (lastFetchRef.current === fetchKey) return;
 
     lastFetchRef.current = fetchKey;
-    fetchMediaLibrary(mediaPage, filterType, searchTerm);
+    fetchMediaLibrary(filterType, searchTerm);
 
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
-  }, [show, activeTab, mediaPage, filterType, searchTerm, fetchMediaLibrary]);
+  }, [show, filterType, searchTerm, fetchMediaLibrary]);
 
   // Handle upload
   const handleUploadImage = async (e) => {
@@ -112,12 +121,25 @@ const MediaLibraryModal = ({
 
     setUploading(true);
     try {
+      const newUploads = [];
       for (const file of files) {
-        await uploadImageToServer(file);
+        const uploadedUrl = await uploadImageToServer(file);
+        if (uploadedUrl) {
+          newUploads.push({
+            _id: `uploaded-${Date.now()}-${file.name}-${newUploads.length}`,
+            rawUrl: uploadedUrl,
+            previewUrl: resolveUrl(uploadedUrl),
+            filename: file.name,
+            type: 'image',
+            source: 'uploaded',
+          });
+        }
       }
-      setMediaPage(1);
-      setSearchTerm('');
-      setFilterType('image');
+      if (newUploads.length > 0) {
+        setUploadedAssets((prev) => [...newUploads, ...prev]);
+      }
+      lastFetchRef.current = null;
+      await fetchMediaLibrary(filterType, searchTerm);
       toast.success(`${files.length} image(s) uploaded successfully`);
     } catch (err) {
       console.error('Upload error:', err);
@@ -125,6 +147,28 @@ const MediaLibraryModal = ({
     } finally {
       setUploading(false);
     }
+  };
+
+  const combinedAssets = [
+    ...uploadedAssets,
+    ...productImages.map((img, index) => buildLocalAsset(img, 'product', index)),
+    ...variantImages.map((img, index) => buildLocalAsset(img, 'variant', index)),
+    ...groupImages.map((img, index) => buildLocalAsset(img, 'group', index)),
+    ...mediaAssets,
+  ].filter((asset) => {
+    const matchesSearch = !searchTerm || asset.filename.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = filterType === '' || asset.type === filterType;
+    return matchesSearch && matchesType;
+  }).filter((asset, index, array) => {
+    return array.findIndex((item) => item.previewUrl === asset.previewUrl) === index;
+  });
+
+  const getSourceLabel = (source) => {
+    if (source === 'product') return 'Product';
+    if (source === 'variant') return 'Variant';
+    if (source === 'group') return 'Group';
+    if (source === 'uploaded') return 'New';
+    return 'Library';
   };
 
   if (!show) return null;
@@ -160,7 +204,6 @@ const MediaLibraryModal = ({
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
-                  setMediaPage(1);
                 }}
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
               />
@@ -171,7 +214,6 @@ const MediaLibraryModal = ({
               <button
                 onClick={() => {
                   setFilterType('image');
-                  setMediaPage(1);
                 }}
                 className={`px-4 py-2.5 rounded-lg font-medium transition ${filterType === 'image'
                   ? 'bg-gray-900 text-white shadow-md'
@@ -183,7 +225,6 @@ const MediaLibraryModal = ({
               <button
                 onClick={() => {
                   setFilterType('');
-                  setMediaPage(1);
                 }}
                 className={`px-4 py-2.5 rounded-lg font-medium transition ${filterType === ''
                   ? 'bg-gray-900 text-white shadow-md'
@@ -208,240 +249,64 @@ const MediaLibraryModal = ({
               />
             </label>
           </div>
-
-          {/* Tabs */}
-          <div className="flex gap-6 border-b border-gray-200 -mb-4 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('product')}
-              className={`px-4 py-3 font-semibold transition border-b-2 whitespace-nowrap ${activeTab === 'product'
-                ? 'border-blue-600 text-gray-900'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-                }`}
-            >
-              <i className="fas fa-images mr-2"></i>Product ({productImages.length})
-            </button>
-            {variantImages.length > 0 && (
-              <button
-                onClick={() => setActiveTab('variants')}
-                className={`px-4 py-3 font-semibold transition border-b-2 whitespace-nowrap ${activeTab === 'variants'
-                  ? 'border-blue-600 text-gray-900'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-              >
-                <i className="fas fa-layer-group mr-2"></i>Variants ({variantImages.length})
-              </button>
-            )}
-            {groupImages.length > 0 && (
-              <button
-                onClick={() => setActiveTab('groups')}
-                className={`px-4 py-3 font-semibold transition border-b-2 whitespace-nowrap ${activeTab === 'groups'
-                  ? 'border-blue-600 text-gray-900'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-              >
-                <i className="fas fa-object-group mr-2"></i>Groups ({groupImages.length})
-              </button>
-            )}
-            <button
-              onClick={() => setActiveTab('media')}
-              className={`px-4 py-3 font-semibold transition border-b-2 whitespace-nowrap ${activeTab === 'media'
-                ? 'border-blue-600 text-gray-900'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-                }`}
-            >
-              <i className="fas fa-library mr-2"></i>Media Library
-            </button>
+          <div className="text-sm text-gray-600">
+            Showing everything in one library: product, variant, group, and uploaded media.
           </div>
         </div>
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto bg-gray-50 px-6 py-6">
-          {activeTab === 'product' ? (
-            // Product Images Tab
-            <>
-              {productImages.length === 0 ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <i className="fas fa-image text-6xl text-gray-300 mb-4"></i>
-                    <p className="text-gray-500 text-lg">No product images yet</p>
-                  </div>
+          {loading ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-blue-100">
+                  <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
                 </div>
-              ) : (
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                  {productImages.map((img, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => onSelectImage(img)}
-                      className="group relative rounded-lg overflow-hidden bg-white border-2 border-gray-200 hover:border-blue-500 cursor-pointer transition h-28 shadow-sm hover:shadow-md"
-                    >
-                      <img
-                        src={img}
-                        alt={`Product ${idx}`}
-                        className="w-full h-full object-cover group-hover:scale-105 transition"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <i className="fas fa-check text-white text-2xl"></i>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : activeTab === 'variants' ? (
-            // Variant Images Tab
-            <>
-              {variantImages.length === 0 ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <i className="fas fa-layer-group text-6xl text-gray-300 mb-4"></i>
-                    <p className="text-gray-500 text-lg">No variant images yet</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                  {variantImages.map((img, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => onSelectImage(img)}
-                      className="group relative rounded-lg overflow-hidden bg-white border-2 border-gray-200 hover:border-blue-500 cursor-pointer transition h-28 shadow-sm hover:shadow-md"
-                    >
-                      <img
-                        src={img}
-                        alt={`Variant ${idx}`}
-                        className="w-full h-full object-cover group-hover:scale-105 transition"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <i className="fas fa-check text-white text-2xl"></i>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : activeTab === 'groups' ? (
-            // Group Images Tab
-            <>
-              {groupImages.length === 0 ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <i className="fas fa-object-group text-6xl text-gray-300 mb-4"></i>
-                    <p className="text-gray-500 text-lg">No group images yet</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                  {groupImages.map((img, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => onSelectImage(img)}
-                      className="group relative rounded-lg overflow-hidden bg-white border-2 border-gray-200 hover:border-blue-500 cursor-pointer transition h-28 shadow-sm hover:shadow-md"
-                    >
-                      <img
-                        src={img}
-                        alt={`Group ${idx}`}
-                        className="w-full h-full object-cover group-hover:scale-105 transition"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <i className="fas fa-check text-white text-2xl"></i>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
+                <p className="text-gray-600 font-medium">Loading media library...</p>
+              </div>
+            </div>
+          ) : combinedAssets.length === 0 ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <i className="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+                <p className="text-gray-500 text-lg">No media found</p>
+                <p className="text-gray-400 text-sm mt-2">Upload some images to get started</p>
+              </div>
+            </div>
           ) : (
-            // Media Library Tab
-            <>
-              {loading ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-blue-100">
-                      <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                    </div>
-                    <p className="text-gray-600 font-medium">Loading media library...</p>
-                  </div>
-                </div>
-              ) : mediaAssets.length === 0 ? (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <i className="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
-                    <p className="text-gray-500 text-lg">No media found</p>
-                    <p className="text-gray-400 text-sm mt-2">Upload some images to get started</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                  {mediaAssets.map((asset) => (
-                    <div
-                      key={asset._id}
-                      onClick={() => onSelectImage(asset.url)}
-                      className="group relative rounded-lg overflow-hidden bg-white border-2 border-gray-200 hover:border-blue-500 cursor-pointer transition h-28 shadow-sm hover:shadow-md"
-                    >
-                      {asset.type === 'image' ? (
-                        <img
-                          src={asset.url}
-                          alt={asset.filename}
-                          className="w-full h-full object-cover group-hover:scale-105 transition"
-                          onError={(e) => (e.target.src = '/placeholder.png')}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                          <i className="fas fa-video text-2xl text-gray-500"></i>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <i className="fas fa-check text-white text-2xl"></i>
-                      </div>
-                      <div className="absolute top-2 right-2 px-2 py-1 bg-gray-900 text-white text-xs font-semibold rounded">
-                        {asset.type === 'image' ? 'IMG' : 'VID'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Pagination */}
-        {activeTab === 'media' && totalPages > 1 && (
-          <div className="bg-white border-t border-gray-200 px-6 py-4 flex items-center justify-center gap-2">
-            <button
-              onClick={() => setMediaPage(Math.max(1, mediaPage - 1))}
-              disabled={mediaPage === 1 || loading}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              <i className="fas fa-chevron-left"></i>
-            </button>
-
-            <div className="flex gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const startPage = Math.max(1, mediaPage - 2);
-                return startPage + i;
-              }).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setMediaPage(page)}
-                  disabled={loading}
-                  className={`px-3 py-2 rounded-lg font-medium transition ${mediaPage === page
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-4">
+              {combinedAssets.map((asset) => (
+                <div
+                  key={asset._id}
+                  onClick={() => onSelectImage(asset.rawUrl)}
+                  className="group relative rounded-lg overflow-hidden bg-white border-2 border-gray-200 hover:border-blue-500 cursor-pointer transition h-32 shadow-sm hover:shadow-md"
                 >
-                  {page}
-                </button>
+                  {asset.type === 'image' ? (
+                    <img
+                      src={asset.previewUrl}
+                      alt={asset.filename}
+                      className="w-full h-full object-cover group-hover:scale-105 transition"
+                      onError={(e) => (e.target.src = '/placeholder.png')}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                      <i className="fas fa-video text-2xl text-gray-500"></i>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <i className="fas fa-check text-white text-2xl"></i>
+                  </div>
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-white/90 text-gray-900 text-[11px] font-semibold rounded">
+                    {getSourceLabel(asset.source)}
+                  </div>
+                  <div className="absolute top-2 right-2 px-2 py-1 bg-gray-900 text-white text-xs font-semibold rounded">
+                    {asset.type === 'image' ? 'IMG' : 'VID'}
+                  </div>
+                </div>
               ))}
             </div>
-
-            <button
-              onClick={() => setMediaPage(Math.min(totalPages, mediaPage + 1))}
-              disabled={mediaPage === totalPages || loading}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              <i className="fas fa-chevron-right"></i>
-            </button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Footer */}
         <div className="bg-white border-t border-gray-200 px-6 py-4 flex justify-end gap-3">

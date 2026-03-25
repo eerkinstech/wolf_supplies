@@ -85,7 +85,7 @@ async def upload_media(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error uploading media: {str(e)}")
 
 
-async def get_media_list(page: int = 1, limit: int = 24, search: Optional[str] = None, type: Optional[str] = None):
+async def get_media_list(page: int = 1, limit: int = 24, search: Optional[str] = None, type: Optional[str] = None, all: bool = False):
     try:
         def _fetch():
             coll = db.get_collection("media")
@@ -95,12 +95,23 @@ async def get_media_list(page: int = 1, limit: int = 24, search: Optional[str] =
             if type:
                 q["type"] = type
             total = coll.count_documents(q)
-            cursor = coll.find(q).sort("created_at", -1).skip((page - 1) * limit).limit(limit)
+            cursor = coll.find(q).sort("created_at", -1)
+            if not all:
+                cursor = cursor.skip((page - 1) * limit).limit(limit)
             assets = []
             for a in cursor:
                 a["_id"] = str(a.get("_id"))
                 assets.append(a)
-            return {"assets": assets, "pagination": {"page": page, "pages": (total + limit - 1) // limit, "total": total}}
+            pages = 1 if all else ((total + limit - 1) // limit)
+            return {
+                "assets": assets,
+                "pagination": {
+                    "page": 1 if all else page,
+                    "pages": pages,
+                    "total": total,
+                    "limit": total if all else limit,
+                },
+            }
 
         result = await run_in_threadpool(_fetch)
         return {"success": True, **result}

@@ -783,8 +783,8 @@ try:
         return False
 
     @app.get("/api/media")
-    async def api_get_media(page: int = 1, limit: int = 24, search: str = None, type: str = None):
-        return await get_media_list(page, limit, search, type)
+    async def api_get_media(page: int = 1, limit: int = 24, search: str = None, type: str = None, all: bool = False):
+        return await get_media_list(page, limit, search, type, all)
 
     @app.delete("/api/media/{media_id}")
     async def api_delete_media_item(media_id: str):
