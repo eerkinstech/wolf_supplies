@@ -52,7 +52,7 @@ const AboutUsPage = () => {
               <div>
                 <h2 className="text-4xl font-bold text-(--color-text-primary) mb-6">Our Story</h2>
                 <p className="text-(--color-text-light) text-lg leading-relaxed mb-4">
-                  Wolf Suppliesis a UK-based online retailer registered with Companies House (Company Number: 16070029) operating from Birmingham. We operate in accordance with UK consumer protection laws and data protection regulations.              </p>
+                  Wolf Supplies a UK-based online retailer registered with Companies House (Company Number: 16070029) operating from Birmingham. We operate in accordance with UK consumer protection laws and data protection regulations.              </p>
                 <p className="text-(--color-text-light) text-lg leading-relaxed mb-4">
                   We offer customers across the United Kingdom a selection of products at competitive prices with transparent policies, secure payment processing, and customer support. We offer a 31-day returns policy and free UK shipping.
                 </p>

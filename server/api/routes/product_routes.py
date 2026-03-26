@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body, HTTPException
+from fastapi import APIRouter, Depends, Body, HTTPException, Query
 from controllers.product_controller import (
     get_products,
     get_product_by_id,
@@ -35,8 +35,13 @@ def check_product_permission(user: dict):
     return False
 
 @router.get("/")
-async def fetch_products():
-    return await get_products()
+async def fetch_products(
+    search: str | None = Query(None),
+    category: str | None = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=10000),
+):
+    return await get_products(search=search, category=category, page=page, limit=limit)
 
 @router.get("/{product_id}")
 async def fetch_product_by_id(product_id: str):

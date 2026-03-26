@@ -13,10 +13,12 @@ const CategoriesPage = () => {
   const dispatch = useDispatch();
   const { categories, loading, error, searchQuery } = useSelector((state) => state.category);
   const [filteredCategories, setFilteredCategories] = useState([]);
+  const [hasRequestedCategories, setHasRequestedCategories] = useState(false);
 
 
 
   useEffect(() => {
+    setHasRequestedCategories(true);
     dispatch(fetchCategories());
   }, [dispatch]);
 
@@ -55,6 +57,8 @@ const CategoriesPage = () => {
     dispatch(clearSearchQuery());
   };
 
+  const isLoadingCategories = loading || !hasRequestedCategories;
+
   return (
     <>
       <Helmet>
@@ -92,7 +96,7 @@ const CategoriesPage = () => {
           />
 
           {/* Content */}
-          {loading ? (
+          {isLoadingCategories ? (
             <div className="flex justify-center items-center h-96">
               <div className="text-center">
                 <i className="fas fa-spinner animate-spin" style={{ fontSize: '64px', color: 'var(--color-text-light)', display: 'block', marginBottom: '16px' }}></i>

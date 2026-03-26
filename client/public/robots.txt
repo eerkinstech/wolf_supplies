@@ -45,9 +45,8 @@ Disallow: /account
 Disallow: /api/
 Crawl-delay: 1
 
-# Sitemaps (on API subdomain)
-Sitemap: https://wolfsupplies.co.uk/api/sitemap.xml
-Sitemap: https://wolfsupplies.co.uk/api/sitemap-products.xml
+# Live sitemap
+Sitemap: https://wolfsupplies.co.uk/sitemap.xml
 
-# GMC Feed also on API subdomain
-# Format: https://wolfsupplies.co.uk/api/gmc-feed.xml
+# Live Google Merchant Center feed
+# Format: https://wolfsupplies.co.uk/gmc-feed.xml

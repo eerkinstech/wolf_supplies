@@ -965,10 +965,15 @@ const CategoryManagement = () => {
                         'Content-Type': 'multipart/form-data',
                     },
                 });
+                const uploadedImageUrl =
+                    res.data.serverUrl ||
+                    res.data.asset?.serverUrl ||
+                    res.data.url ||
+                    res.data.publicUrl;
 
                 // Store the image URL from server - use callback to ensure state updates correctly
                 setFormData((prevFormData) => {
-                    const updatedFormData = { ...prevFormData, image: res.data.url };
+                    const updatedFormData = { ...prevFormData, image: uploadedImageUrl };
                     return updatedFormData;
                 });
                 toast.success('Image uploaded successfully');

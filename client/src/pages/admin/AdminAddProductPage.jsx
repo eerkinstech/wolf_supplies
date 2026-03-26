@@ -963,9 +963,15 @@ const AdminAddProductPage = ({ params }) => {
             },
           });
 
-          if (res.data.success && res.data.url) {
+          const uploadedImageUrl =
+            res.data.serverUrl ||
+            res.data.asset?.serverUrl ||
+            res.data.url ||
+            res.data.publicUrl;
+
+          if (res.data.success && uploadedImageUrl) {
             toast.success('Image uploaded successfully');
-            return res.data.url;
+            return uploadedImageUrl;
           }
         } catch (authErr) {
           console.error('Authenticated upload failed:', authErr.response?.data?.message || authErr.message);
@@ -988,9 +994,15 @@ const AdminAddProductPage = ({ params }) => {
           },
         });
 
-        if (res.data.success && res.data.url) {
+        const uploadedImageUrl =
+          res.data.serverUrl ||
+          res.data.asset?.serverUrl ||
+          res.data.url ||
+          res.data.publicUrl;
+
+        if (res.data.success && uploadedImageUrl) {
           toast.success('Image uploaded successfully');
-          return res.data.url;
+          return uploadedImageUrl;
         }
       } catch (publicErr) {
         console.error('Public upload failed:', publicErr.response?.data?.message || publicErr.message);

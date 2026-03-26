@@ -133,7 +133,7 @@ const PoliciesFAQPage = () => {
         },
         {
           question: 'What is your company registration number?',
-          answer: 'Wolf Suppliesis registered at Companies House with Company Number 16070029. Address: Unit 4 Atlas Estates, Colebrook Road, Birmingham, West Midlands, B11 2NT, UK.'
+          answer: 'Wolf Supplies registered at Companies House with Company Number 16070029. Address: Unit 4 Atlas Estates, Colebrook Road, Birmingham, West Midlands, B11 2NT, UK.'
         },
         {
           question: 'What if I have a dispute?',
@@ -203,7 +203,7 @@ const PoliciesFAQPage = () => {
         <div className="bg-[var(--color-bg-section)] rounded-lg border-2 border-[var(--color-border-light)] p-8 mt-12">
           <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-4">Didn't Find Your Answer?</h2>
           <p className="text-[var(--color-text-light)] mb-6">
-            Our support team at Wolf Suppliesis here to help with any questions or concerns you may have.
+            Our support team at Wolf Supplies here to help with any questions or concerns you may have.
           </p>
           <div className="space-y-2 text-[var(--color-text-light)] mb-6">
             <p><i className="fas fa-envelope inline mr-2" style={{ color: 'var(--color-accent-primary)' }}></i> Email: <a href="mailto:sales@wolfsupplies.co.uk" className="text-[var(--color-accent-primary)] hover:underline">sales@wolfsupplies.co.uk</a></p>

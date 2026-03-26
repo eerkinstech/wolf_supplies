@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
 import { Helmet } from 'react-helmet-async';
-import { fetchProductById, fetchProductBySlug } from '../redux/slices/productSlice';
+import { fetchProductById, fetchProductBySlug, hydrateProduct } from '../redux/slices/productSlice';
 import useMetaTags from '../hooks/useMetaTags';
 import useURLRedirect from '../hooks/useURLRedirect';
 import { addToCart, syncCart } from '../redux/slices/cartSlice';
@@ -20,7 +20,7 @@ const ProductDetailPage = () => {
   const { slug, id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { product, loading } = useSelector((state) => state.product);
+  const { product, loading, error } = useSelector((state) => state.product);
   const wishlistItems = useSelector((state) => state.wishlist.items);
   const [quantity, setQuantity] = useState(1);
   const [isInWishlist, setIsInWishlist] = useState(false);
@@ -44,6 +44,7 @@ const ProductDetailPage = () => {
   const zoomImageRef = useRef(null);
   const scrollPositionRef = useRef(0);
   const [requireReviewApproval, setRequireReviewApproval] = useState(true);
+  const [hasRequestedProduct, setHasRequestedProduct] = useState(false);
   const { token, user } = useAuth();
   const cartItems = useSelector((state) => state.cart.items);
   const productTrustHighlights = [
@@ -80,6 +81,9 @@ const ProductDetailPage = () => {
   ];
 
   const API = import.meta.env.VITE_API_URL || '';
+  const preloadedProduct = typeof window !== 'undefined'
+    ? window.__SEO_PRELOADED_PRODUCT__ || window.__SEO_PRELOADED_STATE__?.product || null
+    : null;
 
   const normalizeImageValue = (img) => {
     if (!img) return '';
@@ -159,60 +163,11 @@ const ProductDetailPage = () => {
     url: typeof window !== 'undefined' ? window.location.href : '',
   });
 
-  // Check for URL redirects if product not found
-  useURLRedirect(!product && !loading);
+  const isInitialProductLoad = loading || !hasRequestedProduct;
+  const shouldTreatAsMissing = hasRequestedProduct && !loading && !product && !!error;
 
-  // Inject JSON-LD structured data for Google Merchant Center
-  useEffect(() => {
-    if (!product) return;
-
-    const jsonLdSchema = {
-      '@context': 'https://schema.org/',
-      '@type': 'Product',
-      name: product.name,
-      description: product.description?.replace(/<[^>]*>/g, '') || product.name,
-      image: product.images?.filter(img => img) || [],
-      sku: product.variantCombinations?.[0]?.sku || `WOLF-${product._id}`,
-      brand: {
-        '@type': 'Brand',
-        name: product.categories?.[0]?.name || 'Wolf Supplies'
-      },
-      offers: {
-        '@type': 'Offer',
-        url: typeof window !== 'undefined' ? window.location.href : '',
-        priceCurrency: 'GBP',
-        price: product.price?.toString(),
-        availability: (product.inStock || product.stock > 0)
-          ? 'https://schema.org/InStock'
-          : 'https://schema.org/OutOfStock',
-        itemCondition: 'https://schema.org/NewCondition'
-      },
-      ...(product.rating > 0 && {
-        aggregateRating: {
-          '@type': 'AggregateRating',
-          ratingValue: product.rating?.toString(),
-          reviewCount: product.numReviews?.toString() || '0'
-        }
-      })
-    };
-
-    // Create or update script tag for JSON-LD
-    let scriptTag = document.querySelector('script[type="application/ld+json"][data-product-schema]');
-    if (!scriptTag) {
-      scriptTag = document.createElement('script');
-      scriptTag.type = 'application/ld+json';
-      scriptTag.setAttribute('data-product-schema', 'true');
-      document.head.appendChild(scriptTag);
-    }
-    scriptTag.textContent = JSON.stringify(jsonLdSchema);
-
-    // Cleanup function to remove the script tag when component unmounts
-    return () => {
-      if (scriptTag && scriptTag.parentNode) {
-        scriptTag.parentNode.removeChild(scriptTag);
-      }
-    };
-  }, [product]);
+  // Check for URL redirects only after the fetch has actually finished.
+  useURLRedirect(shouldTreatAsMissing);
 
   // Fetch review approval settings
   useEffect(() => {
@@ -229,6 +184,12 @@ const ProductDetailPage = () => {
   }, [API]);
 
   useEffect(() => {
+    if (preloadedProduct && preloadedProduct.slug === slug) {
+      setHasRequestedProduct(true);
+      dispatch(hydrateProduct(preloadedProduct));
+      return;
+    }
+
     // Reset quantity and selections when slug/id changes
     setQuantity(1);
     setSelectedSize(null);
@@ -241,10 +202,11 @@ const ProductDetailPage = () => {
 
     const ident = slug || id;
     if (ident) {
+      setHasRequestedProduct(true);
       if (slug) dispatch(fetchProductBySlug(slug));
       else dispatch(fetchProductById(id));
     }
-  }, [id, slug, dispatch]);
+  }, [id, slug, dispatch, preloadedProduct]);
 
   useEffect(() => {
     if (!product) return;
@@ -684,7 +646,67 @@ const ProductDetailPage = () => {
     }
   };
 
-  if (loading) {
+  const buildOfferSchema = (offerUrl, offerPrice, offerStock, offerIdSuffix = '') => ({
+    '@type': 'Offer',
+    ...(offerIdSuffix ? { '@id': `https://wolfsupplies.co.uk/product/${product.slug}#offer-${offerIdSuffix}` } : { '@id': `https://wolfsupplies.co.uk/product/${product.slug}#offer` }),
+    url: offerUrl,
+    priceCurrency: 'GBP',
+    price: Number(offerPrice || 0).toFixed(2),
+    priceValidUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    availability: offerStock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+    inventoryLevel: {
+      '@type': 'QuantitativeValue',
+      value: offerStock || 0
+    },
+    seller: {
+      '@type': 'Organization',
+      name: 'Wolf Supplies',
+      url: 'https://wolfsupplies.co.uk'
+    },
+    shippingDetails: {
+      '@type': 'OfferShippingDetails',
+      shippingRate: {
+        '@type': 'PriceSpecification',
+        priceCurrency: 'GBP',
+        price: '0.00',
+        eligibleQuantity: {
+          '@type': 'QuantitativeValue',
+          minValue: 1
+        }
+      },
+      shippingLabel: 'Free Shipping',
+      deliveryTime: {
+        '@type': 'ShippingDeliveryTime',
+        handlingTime: {
+          '@type': 'QuantitativeValue',
+          minValue: 1,
+          maxValue: 2,
+          unitCode: 'DAY'
+        },
+        transitTime: {
+          '@type': 'QuantitativeValue',
+          minValue: 2,
+          maxValue: 4,
+          unitCode: 'DAY'
+        }
+      }
+    },
+    hasMerchantReturnPolicy: {
+      '@type': 'MerchantReturnPolicy',
+      returnsAccepted: true,
+      returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+      merchantReturnDays: 31,
+      returnMethod: ['http://purl.org/goodrelations/v1#DeliveryModeOwnFleet', 'http://purl.org/goodrelations/v1#UPSGround'],
+      returnFees: 'https://schema.org/FreeReturn',
+      returnShippingFeesAmount: {
+        '@type': 'PriceSpecification',
+        priceCurrency: 'GBP',
+        price: '0.00'
+      }
+    }
+  });
+
+  if (isInitialProductLoad) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-[var(--color-bg-section)]">
         <i className="fas fa-spinner text-6xl text-[var(--color-text-light)] animate-spin"></i>
@@ -692,13 +714,21 @@ const ProductDetailPage = () => {
     );
   }
 
-  if (!product) {
+  if (shouldTreatAsMissing) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center bg-[var(--color-bg-section)]">
         <p className="text-3xl text-[var(--color-text-light)] mb-6">Product not found</p>
         <button onClick={() => navigate('/products')} className="bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-light)] text-white px-8 py-3 rounded-lg font-bold transition duration-300">
           Browse Products
         </button>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-[var(--color-bg-section)]">
+        <i className="fas fa-spinner text-6xl text-[var(--color-text-light)] animate-spin"></i>
       </div>
     );
   }
@@ -741,6 +771,30 @@ const ProductDetailPage = () => {
   const isAvailable = (() => {
     if (availableStock !== null) return availableStock > 0;
     return !!product.inStock;
+  })();
+
+  const productSchemaOffers = (() => {
+    const variantOffers = (product.variantCombinations || [])
+      .filter((variant) => typeof variant?.price === 'number' && variant.price > 0)
+      .map((variant, index) => {
+        const variantId = variant._id || variant.id || index + 1;
+        return buildOfferSchema(
+          `https://wolfsupplies.co.uk/product/${product.slug}?variant=${variantId}`,
+          variant.price,
+          variant.stock || 0,
+          String(variantId)
+        );
+      });
+
+    if (variantOffers.length > 0) {
+      return variantOffers;
+    }
+
+    return buildOfferSchema(
+      `https://wolfsupplies.co.uk/product/${product.slug}`,
+      product.price || 0,
+      product.stock || 0
+    );
   })();
 
   // Helper: Extract unique variant option names and their available values from variantCombinations
@@ -875,65 +929,7 @@ const ProductDetailPage = () => {
                 '@type': 'Brand',
                 name: 'Wolf Supplies'
               },
-              offers: {
-                '@type': 'Offer',
-                '@id': `https://wolfsupplies.co.uk/product/${product.slug}#offer`,
-                url: `https://wolfsupplies.co.uk/product/${product.slug}`,
-                priceCurrency: 'GBP',
-                price: (product.price || 0).toFixed(2),
-                priceValidUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                availability: (product.inStock || product.stock > 0) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-                inventoryLevel: {
-                  '@type': 'QuantitativeValue',
-                  value: product.stock || 0
-                },
-                seller: {
-                  '@type': 'Organization',
-                  name: 'Wolf Supplies',
-                  url: 'https://wolfsupplies.co.uk'
-                },
-                shippingDetails: {
-                  '@type': 'OfferShippingDetails',
-                  shippingRate: {
-                    '@type': 'PriceSpecification',
-                    priceCurrency: 'GBP',
-                    price: '0.00',
-                    eligibleQuantity: {
-                      '@type': 'QuantitativeValue',
-                      minValue: 1
-                    }
-                  },
-                  shippingLabel: 'Free Shipping',
-                  deliveryTime: {
-                    '@type': 'ShippingDeliveryTime',
-                    handlingTime: {
-                      '@type': 'QuantitativeValue',
-                      minValue: 1,
-                      maxValue: 2,
-                      unitCode: 'DAY'
-                    },
-                    transitTime: {
-                      '@type': 'QuantitativeValue',
-                      minValue: 2,
-                      maxValue: 4,
-                      unitCode: 'DAY'
-                    }
-                  }
-                },
-                hasMerchantReturnPolicy: {
-                  '@type': 'MerchantReturnPolicy',
-                  returnsAccepted: true,
-                  returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
-                  merchantReturnDays: 31,
-                  returnMethod: ['http://purl.org/goodrelations/v1#DeliveryModeOwnFleet', 'http://purl.org/goodrelations/v1#UPSGround'],
-                  returnFees: 'https://schema.org/FreeReturn',
-                  returnShippingFeesAmount: {
-                    '@type': 'PriceSpecification',
-                    priceCurrency: 'GBP',
-                    price: '0.00'
-                  }
-                }
-              },
+              offers: productSchemaOffers,
               ...(product.rating > 0 && {
                 aggregateRating: {
                   '@type': 'AggregateRating',
@@ -943,11 +939,14 @@ const ProductDetailPage = () => {
                   worstRating: '1'
                 }
               }),
-              review: product.reviews && product.reviews.length > 0 ? product.reviews.slice(0, 10).map(review => ({
+              review: product.reviews && product.reviews.length > 0 ? product.reviews
+                .filter(review => review && review.isApproved !== false && review.comment)
+                .slice(0, 10)
+                .map(review => ({
                 '@type': 'Review',
                 author: {
                   '@type': 'Person',
-                  name: review.reviewer || 'Anonymous'
+                  name: review.name || review.reviewer || 'Anonymous'
                 },
                 datePublished: review.dateCreated || new Date().toISOString(),
                 description: review.comment,

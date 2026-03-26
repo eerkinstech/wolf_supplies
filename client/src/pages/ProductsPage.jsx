@@ -16,6 +16,7 @@ const ProductsPage = () => {
   const { products, loading, filters } = useSelector((state) => state.product);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [hasRequestedProducts, setHasRequestedProducts] = useState(false);
 
 
 
@@ -31,6 +32,7 @@ const ProductsPage = () => {
   }, [searchParams, dispatch]);
 
   useEffect(() => {
+    setHasRequestedProducts(true);
     dispatch(fetchProducts());
   }, [dispatch]);
 
@@ -165,6 +167,7 @@ const ProductsPage = () => {
   }, [products, filters]);
 
   const hasSearchResults = searchQuery && filteredProducts.length > 0;
+  const isLoadingProducts = loading || !hasRequestedProducts;
   const exactMatchCount = useMemo(() => {
     if (!searchQuery) return 0;
     return filteredProducts.filter(p =>
@@ -224,7 +227,7 @@ const ProductsPage = () => {
 
             {/* Products Grid */}
             <div className="lg:col-span-4 space-y-8">
-              {loading ? (
+              {isLoadingProducts ? (
                 <div className="flex justify-center items-center h-96">
                   <div className="text-center">
                     <i className="fas fa-spinner animate-spin" style={{ fontSize: '64px', color: 'var(--color-text-light)', display: 'block', marginBottom: '16px' }}></i>

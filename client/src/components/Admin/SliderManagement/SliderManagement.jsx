@@ -68,10 +68,16 @@ const SliderManagement = () => {
         },
       });
 
-      if (response.data.url) {
+      const uploadedImageUrl =
+        response.data.serverUrl ||
+        response.data.asset?.serverUrl ||
+        response.data.url ||
+        response.data.publicUrl;
+
+      if (uploadedImageUrl) {
         setFormData((prev) => ({
           ...prev,
-          bgImage: response.data.url,
+          bgImage: uploadedImageUrl,
         }));
         setImageFile(file);
         toast.success('Image uploaded successfully');

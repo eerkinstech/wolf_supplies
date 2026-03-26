@@ -3,6 +3,7 @@ import json
 import os
 import re
 import sys
+from urllib.parse import urlsplit
 # Ensure project root is on sys.path so imports like 'server.models' work
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if ROOT_DIR not in sys.path:
@@ -32,6 +33,18 @@ load_dotenv()
 app = FastAPI()
 
 HTML_TEMPLATE_CACHE = {}
+BOT_USER_AGENT_MARKERS = (
+    "googlebot",
+    "google-inspectiontool",
+    "bingbot",
+    "slurp",
+    "duckduckbot",
+    "baiduspider",
+    "yandexbot",
+    "facebot",
+    "twitterbot",
+    "linkedinbot",
+)
 SEO_ROUTES_NOINDEX = {
     "/cart",
     "/checkout",
@@ -127,10 +140,52 @@ STATIC_SEO_ROUTES = {
 }
 
 
+def build_sitewide_structured_data(base_url: str) -> list[dict]:
+    contact_email = (os.getenv("SUPPORT_EMAIL") or os.getenv("ADMIN_EMAIL") or "sales@wolfsupplies.co.uk").strip()
+    contact_phone = (os.getenv("SUPPORT_PHONE") or "+447398998101").strip()
+    return [
+        {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "@id": f"{base_url}/#organization",
+            "name": "Wolf Supplies",
+            "url": base_url,
+            "email": contact_email,
+            "telephone": contact_phone,
+            "contactPoint": {
+                "@type": "ContactPoint",
+                "contactType": "customer service",
+                "email": contact_email,
+                "telephone": contact_phone,
+                "availableLanguage": ["en-GB"],
+                "areaServed": "GB",
+            },
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "@id": f"{base_url}/#website",
+            "name": "Wolf Supplies",
+            "url": base_url,
+            "publisher": {"@id": f"{base_url}/#organization"},
+        },
+    ]
+
+
 def get_base_site_url(request: Request) -> str:
-    site_url = (os.getenv("CLIENT_URL") or "").strip()
+    site_url = (
+        os.getenv("CLIENT_URL")
+        or os.getenv("SITE_URL")
+        or os.getenv("PUBLIC_SITE_URL")
+        or ""
+    ).strip()
     if site_url:
         return site_url.rstrip("/")
+
+    host = (request.url.hostname or "").strip().lower()
+    if host in {"127.0.0.1", "localhost", "0.0.0.0"}:
+        return "https://wolfsupplies.co.uk"
+
     return str(request.base_url).rstrip("/")
 
 
@@ -172,7 +227,335 @@ def make_absolute_url(base_url: str, value: str) -> str:
     return f"{base_url}/{value.lstrip('/')}"
 
 
+def extract_media_url(value) -> str:
+    if not value:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        for key in ("url", "secure_url", "secureUrl", "public_url", "publicUrl", "serverUrl", "path", "src", "image"):
+            candidate = value.get(key)
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate.strip()
+    return ""
+
+
+def extract_product_images(product: dict, base_url: str) -> list[str]:
+    images = []
+    primary_image = extract_media_url(product.get("image"))
+    if primary_image:
+        images.append(make_absolute_url(base_url, primary_image))
+
+    for raw_image in product.get("images") or []:
+        normalized = extract_media_url(raw_image)
+        if normalized:
+            images.append(make_absolute_url(base_url, normalized))
+
+    deduped = []
+    seen = set()
+    for image in images:
+        if image and image not in seen:
+            seen.add(image)
+            deduped.append(image)
+    return deduped
+
+
+def get_product_offer_summary(product: dict) -> tuple[float | None, int, str]:
+    prices = []
+    stock_values = []
+    sku = first_non_empty(product.get("sku"), "")
+
+    base_price = product.get("price")
+    if isinstance(base_price, (int, float)) and base_price > 0:
+        prices.append(float(base_price))
+
+    base_stock = product.get("stock")
+    if isinstance(base_stock, (int, float)):
+        stock_values.append(int(base_stock))
+
+    for variant in product.get("variantCombinations") or []:
+        variant_price = variant.get("price")
+        if isinstance(variant_price, (int, float)) and variant_price > 0:
+            prices.append(float(variant_price))
+        variant_stock = variant.get("stock")
+        if isinstance(variant_stock, (int, float)):
+            stock_values.append(int(variant_stock))
+        if not sku:
+            sku = first_non_empty(variant.get("sku"), sku)
+
+    price = min(prices) if prices else None
+    stock = max(stock_values) if stock_values else 0
+    return price, stock, sku
+
+
+def build_product_offers_schema(product: dict, base_url: str, path: str):
+    shipping_details = {
+        "@type": "OfferShippingDetails",
+        "shippingRate": {
+            "@type": "MonetaryAmount",
+            "value": "0.00",
+            "currency": "GBP",
+        },
+        "shippingDestination": {
+            "@type": "DefinedRegion",
+            "addressCountry": "GB",
+        },
+        "deliveryTime": {
+            "@type": "ShippingDeliveryTime",
+            "handlingTime": {
+                "@type": "QuantitativeValue",
+                "minValue": 1,
+                "maxValue": 2,
+                "unitCode": "DAY",
+            },
+            "transitTime": {
+                "@type": "QuantitativeValue",
+                "minValue": 2,
+                "maxValue": 4,
+                "unitCode": "DAY",
+            },
+        },
+    }
+    return_policy = {
+        "@type": "MerchantReturnPolicy",
+        "applicableCountry": "GB",
+        "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+        "merchantReturnDays": 31,
+        "returnMethod": "https://schema.org/ReturnByMail",
+        "returnFees": "https://schema.org/FreeReturn",
+    }
+
+    variant_offers = []
+    for index, variant in enumerate(product.get("variantCombinations") or [], start=1):
+        variant_price = variant.get("price")
+        if not isinstance(variant_price, (int, float)) or variant_price <= 0:
+            continue
+
+        variant_id = first_non_empty(variant.get("_id"), variant.get("id"), index)
+        variant_stock = variant.get("stock") if isinstance(variant.get("stock"), (int, float)) else 0
+        offer = {
+            "@type": "Offer",
+            "priceCurrency": "GBP",
+            "price": f"{float(variant_price):.2f}",
+            "availability": "https://schema.org/InStock" if variant_stock > 0 else "https://schema.org/OutOfStock",
+            "url": f"{base_url}{path}?variant={variant_id}",
+            "itemCondition": "https://schema.org/NewCondition",
+            "shippingDetails": shipping_details,
+            "hasMerchantReturnPolicy": return_policy,
+        }
+        variant_offers.append(offer)
+
+    if variant_offers:
+        return variant_offers
+
+    price, stock, _ = get_product_offer_summary(product)
+    offer = {
+        "@type": "Offer",
+        "priceCurrency": "GBP",
+        "availability": "https://schema.org/InStock" if stock and stock > 0 else "https://schema.org/OutOfStock",
+        "url": f"{base_url}{path}",
+        "itemCondition": "https://schema.org/NewCondition",
+        "shippingDetails": shipping_details,
+        "hasMerchantReturnPolicy": return_policy,
+    }
+    if price is not None:
+        offer["price"] = f"{price:.2f}"
+    return offer
+
+
+def build_product_reviews_schema(product: dict) -> tuple[dict | None, list[dict]]:
+    reviews = product.get("reviews") or []
+    approved_reviews = [
+        review for review in reviews
+        if isinstance(review, dict) and review.get("isApproved", True) is not False
+    ]
+
+    review_schema = []
+    for review in approved_reviews[:10]:
+        author_name = first_non_empty(review.get("name"), "Verified customer")
+        review_body = truncate_text(strip_html_tags(first_non_empty(review.get("comment"), "")), 300)
+        rating_value = review.get("rating")
+        if not review_body or not isinstance(rating_value, (int, float)):
+            continue
+        review_schema.append({
+            "@type": "Review",
+            "author": {
+                "@type": "Person",
+                "name": author_name,
+            },
+            "reviewBody": review_body,
+            "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": float(rating_value),
+                "bestRating": 5,
+                "worstRating": 1,
+            },
+        })
+
+    rating_value = product.get("rating")
+    review_count = product.get("numReviews") or len(review_schema)
+    aggregate_rating = None
+    if isinstance(rating_value, (int, float)) and rating_value > 0 and review_count > 0:
+        aggregate_rating = {
+            "@type": "AggregateRating",
+            "ratingValue": float(rating_value),
+            "reviewCount": int(review_count),
+            "bestRating": 5,
+            "worstRating": 1,
+        }
+
+    return aggregate_rating, review_schema
+
+
+def build_products_listing_seo(base_url: str, path: str) -> dict:
+    total_products = 0
+    list_items = []
+    list_markup = []
+
+    try:
+        coll = db.get_collection("products")
+        products = list(
+            coll.find({"isDraft": {"$ne": True}}, {"name": 1, "slug": 1, "description": 1, "images": 1, "image": 1})
+            .sort("_id", -1)
+            .limit(24)
+        )
+
+        for index, product in enumerate(products, start=1):
+            slug = (product.get("slug") or "").strip()
+            name = first_non_empty(product.get("name"), "Product")
+            if not slug:
+                continue
+            url = f"{base_url}/product/{slug}"
+            list_items.append({
+                "@type": "ListItem",
+                "position": index,
+                "url": url,
+                "name": name,
+            })
+            list_markup.append(
+                f'<li><a href="{html.escape(url)}">{html.escape(name)}</a></li>'
+            )
+
+        total_products = coll.count_documents({"isDraft": {"$ne": True}})
+    except Exception:
+        pass
+
+    body = (
+        f"Browse {total_products} published products from Wolf Supplies."
+        if total_products
+        else "Browse the full Wolf Supplies catalogue."
+    )
+    extra_html = ""
+    if list_markup:
+        extra_html = (
+            "<section>"
+            "<h2>Featured Products</h2>"
+            "<ul>"
+            f"{''.join(list_markup)}"
+            "</ul>"
+            "</section>"
+        )
+
+    return {
+        "title": "All Products | Wolf Supplies",
+        "description": "Browse the full Wolf Supplies catalogue with fast UK delivery and practical products for home, garden, and trade use.",
+        "keywords": "all products, wolf supplies, shop, UK delivery",
+        "canonical": f"{base_url}{path}",
+        "type": "website",
+        "heading": "All Products",
+        "body": body,
+        "extra_html": extra_html,
+        "structured_data": {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": "All Products | Wolf Supplies",
+            "description": body,
+            "url": f"{base_url}{path}",
+            "mainEntity": {
+                "@type": "ItemList",
+                "numberOfItems": total_products,
+                "itemListElement": list_items,
+            },
+        },
+    }
+
+
+def build_categories_listing_seo(base_url: str, path: str) -> dict:
+    total_categories = 0
+    list_items = []
+    list_markup = []
+
+    try:
+        coll = db.get_collection("categories")
+        categories = list(
+            coll.find({}, {"name": 1, "slug": 1, "description": 1})
+            .sort("name", 1)
+            .limit(50)
+        )
+
+        for index, category in enumerate(categories, start=1):
+            slug = (category.get("slug") or "").strip()
+            name = first_non_empty(category.get("name"), "Category")
+            if not slug:
+                continue
+            url = f"{base_url}/category/{slug}"
+            list_items.append({
+                "@type": "ListItem",
+                "position": index,
+                "url": url,
+                "name": name,
+            })
+            list_markup.append(
+                f'<li><a href="{html.escape(url)}">{html.escape(name)}</a></li>'
+            )
+
+        total_categories = coll.count_documents({})
+    except Exception:
+        pass
+
+    body = (
+        f"Explore {total_categories} product categories from Wolf Supplies."
+        if total_categories
+        else "Explore Wolf Supplies product categories and collections."
+    )
+    extra_html = ""
+    if list_markup:
+        extra_html = (
+            "<section>"
+            "<h2>Browse Categories</h2>"
+            "<ul>"
+            f"{''.join(list_markup)}"
+            "</ul>"
+            "</section>"
+        )
+
+    return {
+        "title": "Product Categories | Wolf Supplies",
+        "description": "Explore Wolf Supplies product categories and find the right products faster.",
+        "keywords": "product categories, wolf supplies, shop categories",
+        "canonical": f"{base_url}{path}",
+        "type": "website",
+        "heading": "Product Categories",
+        "body": body,
+        "extra_html": extra_html,
+        "structured_data": {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": "Product Categories | Wolf Supplies",
+            "description": body,
+            "url": f"{base_url}{path}",
+            "mainEntity": {
+                "@type": "ItemList",
+                "numberOfItems": total_categories,
+                "itemListElement": list_items,
+            },
+        },
+    }
+
+
 def serialize_for_json(value):
+    if value.__class__.__name__ == "ObjectId":
+        return str(value)
     if hasattr(value, "isoformat"):
         try:
             return value.isoformat()
@@ -189,6 +572,8 @@ def build_seo_head(metadata: dict) -> str:
     title = html.escape(metadata["title"])
     description = html.escape(metadata["description"])
     canonical = html.escape(metadata["canonical"])
+    parsed_canonical = urlsplit(metadata["canonical"])
+    base_url = f"{parsed_canonical.scheme}://{parsed_canonical.netloc}" if parsed_canonical.scheme and parsed_canonical.netloc else "https://wolfsupplies.co.uk"
     keywords = html.escape(metadata.get("keywords", ""))
     og_image = html.escape(metadata.get("image", ""))
     robots = html.escape(metadata.get("robots", "index, follow"))
@@ -216,16 +601,60 @@ def build_seo_head(metadata: dict) -> str:
     if metadata.get("structured_data"):
         structured_json = json.dumps(serialize_for_json(metadata["structured_data"]), ensure_ascii=False)
         head_parts.append(f'<script type="application/ld+json">{structured_json}</script>')
+    for global_schema in build_sitewide_structured_data(base_url):
+        schema_json = json.dumps(serialize_for_json(global_schema), ensure_ascii=False)
+        head_parts.append(f'<script type="application/ld+json">{schema_json}</script>')
+    if metadata.get("preloaded_state"):
+        preloaded_json = json.dumps(serialize_for_json(metadata["preloaded_state"]), ensure_ascii=False)
+        head_parts.append(f'<script>window.__SEO_PRELOADED_STATE__={preloaded_json};window.__SEO_PRELOADED_PRODUCT__=(window.__SEO_PRELOADED_STATE__||{{}}).product||null;</script>')
     return "\n  ".join(head_parts)
 
 
-def build_seo_snapshot(metadata: dict) -> str:
+def is_bot_request(request: Request) -> bool:
+    user_agent = (request.headers.get("user-agent") or "").lower()
+    return any(marker in user_agent for marker in BOT_USER_AGENT_MARKERS)
+
+
+def build_seo_snapshot(metadata: dict, bot_mode: bool = False) -> str:
     heading = html.escape(metadata.get("heading") or metadata["title"])
     body = html.escape(metadata.get("body") or metadata["description"])
     extra = metadata.get("extra_html", "")
+    image = html.escape(metadata.get("image") or "")
+    if bot_mode:
+        card_styles = (
+            "display:block;max-width:920px;margin:24px auto;padding:28px;"
+            "font-family:Arial,sans-serif;color:#1f2937;background:#f8fafc;"
+            "border:1px solid #dbe4ee;border-radius:20px;box-sizing:border-box;"
+        )
+        media_html = (
+            f'<div style="flex:0 0 280px;max-width:280px;">'
+            f'<img src="{image}" alt="{heading}" '
+            'style="display:block;width:100%;height:auto;border-radius:16px;'
+            'border:1px solid #dbe4ee;background:#ffffff;object-fit:cover;">'
+            '</div>'
+        ) if image else ""
+        content_max_width = "580px" if image else "100%"
+        return (
+            '<div id="seo-route-preview" data-seo-rendered="true" '
+            f'style="{card_styles}">'
+            '<main>'
+            '<div style="display:flex;gap:24px;align-items:flex-start;">'
+            f'{media_html}'
+            f'<div style="flex:1;max-width:{content_max_width};">'
+            f'<h1 style="margin:0 0 16px;font-size:38px;line-height:1.15;font-weight:700;color:#0f172a;">{heading}</h1>'
+            f'<p style="margin:0 0 18px;font-size:24px;line-height:1.45;color:#334155;">{body}</p>'
+            f'<div style="font-size:22px;line-height:1.6;color:#0f172a;">{extra}</div>'
+            '</div>'
+            '</div>'
+            '</main></div>'
+        )
+
+    styles = (
+        "position:absolute;left:-99999px;top:auto;width:1px;height:1px;overflow:hidden;"
+    )
     return (
         '<div id="seo-route-preview" data-seo-rendered="true" '
-        'style="position:absolute;left:-99999px;top:auto;width:1px;height:1px;overflow:hidden;">'
+        f'style="{styles}">'
         f"<main><h1>{heading}</h1><p>{body}</p>{extra}</main></div>"
     )
 
@@ -246,53 +675,48 @@ def build_product_seo(slug: str, base_url: str, path: str) -> dict | None:
         strip_html_tags(product.get("description", "")),
         f"Buy {product.get('name', 'this product')} online from Wolf Supplies.",
     )
-    image = ""
-    images = product.get("images") or []
-    if images:
-        first_image = images[0]
-        if isinstance(first_image, dict):
-            image = first_non_empty(
-                first_image.get("url"),
-                first_image.get("secure_url"),
-                first_image.get("path"),
-                first_image.get("src"),
-            )
-        elif isinstance(first_image, str):
-            image = first_image
-
-    price = first_non_empty(product.get("price"), "")
-    stock = first_non_empty(product.get("stock"), 0)
+    product_images = extract_product_images(product, base_url)
+    image = product_images[0] if product_images else ""
+    price, stock, sku = get_product_offer_summary(product)
+    aggregate_rating, review_schema = build_product_reviews_schema(product)
     extra_html = ""
-    if price != "":
-        extra_html += f"<p>Price: {html.escape(str(price))}</p>"
+    if price is not None:
+        extra_html += f"<p>Price: {html.escape(f'{price:.2f}')}</p>"
     extra_html += f"<p>Availability: {'In stock' if stock and stock > 0 else 'Out of stock'}</p>"
+
+    structured_data = {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": first_non_empty(product.get("name"), name),
+        "description": truncate_text(strip_html_tags(product.get("description", "")) or description, 500),
+        "url": f"{base_url}{path}",
+        "image": product_images,
+        "brand": {"@type": "Brand", "name": "Wolf Supplies"},
+        "offers": build_product_offers_schema(product, base_url, path),
+    }
+    if sku:
+        structured_data["sku"] = sku
+        structured_data["mpn"] = sku
+    if aggregate_rating:
+        structured_data["aggregateRating"] = aggregate_rating
+    if review_schema:
+        structured_data["review"] = review_schema
 
     return {
         "title": f"{name} | Wolf Supplies",
         "description": truncate_text(description, 160),
         "keywords": first_non_empty(product.get("metaKeywords"), ""),
         "canonical": f"{base_url}{path}",
-        "image": make_absolute_url(base_url, image),
+        "image": image,
         "type": "product",
         "heading": first_non_empty(product.get("name"), name),
         "body": truncate_text(strip_html_tags(product.get("description", "")) or description, 220),
         "extra_html": extra_html,
-        "structured_data": {
-            "@context": "https://schema.org",
-            "@type": "Product",
-            "name": first_non_empty(product.get("name"), name),
-            "description": truncate_text(strip_html_tags(product.get("description", "")) or description, 500),
-            "url": f"{base_url}{path}",
-            "image": [make_absolute_url(base_url, image)] if image else [],
-            "brand": {"@type": "Brand", "name": "Wolf Supplies"},
-            "offers": {
-                "@type": "Offer",
-                "priceCurrency": "GBP",
-                "price": str(price) if price != "" else "",
-                "availability": "https://schema.org/InStock" if stock and stock > 0 else "https://schema.org/OutOfStock",
-                "url": f"{base_url}{path}",
-            },
+        "structured_data": structured_data,
+        "preloaded_state": {
+            "product": product,
         },
+        "prefer_client_render_for_bots": True,
     }
 
 
@@ -312,7 +736,7 @@ def build_category_seo(slug: str, base_url: str, path: str) -> dict | None:
         "description": truncate_text(description, 160),
         "keywords": first_non_empty(category.get("metaKeywords"), ""),
         "canonical": f"{base_url}{path}",
-        "image": make_absolute_url(base_url, first_non_empty(category.get("image"), "")),
+        "image": make_absolute_url(base_url, extract_media_url(category.get("image"))),
         "type": "website",
         "heading": first_non_empty(category.get("name"), name),
         "body": truncate_text(strip_html_tags(category.get("description", "")) or description, 220),
@@ -401,6 +825,12 @@ def build_route_seo(path: str, request: Request) -> dict:
             "robots": "noindex, nofollow",
         }
 
+    if path == "/products":
+        return build_products_listing_seo(base_url, path)
+
+    if path == "/categories":
+        return build_categories_listing_seo(base_url, path)
+
     if path in STATIC_SEO_ROUTES:
         static_meta = STATIC_SEO_ROUTES[path].copy()
         static_meta["canonical"] = f"{base_url}{path}" if path != "/" else base_url
@@ -426,13 +856,14 @@ def build_route_seo(path: str, request: Request) -> dict:
     }
 
 
-def render_index_html(index_html: str, metadata: dict) -> str:
+def render_index_html(index_html: str, metadata: dict, bot_mode: bool = False) -> str:
     rendered = re.sub(r"<title>.*?</title>", "", index_html, count=1, flags=re.S)
     rendered = re.sub(r'\s*<meta name="description"[^>]*>\s*', "", rendered, count=1, flags=re.I)
     rendered = re.sub(r'\s*<meta name="keywords"[^>]*>\s*', "", rendered, count=1, flags=re.I)
     rendered = rendered.replace("<head>", f"<head>\n  {build_seo_head(metadata)}", 1)
-    snapshot_html = build_seo_snapshot(metadata)
-    return rendered.replace('<div id="root"></div>', f'{snapshot_html}\n  <div id="root"></div>', 1)
+    snapshot_html = build_seo_snapshot(metadata, bot_mode=False)
+    root_html = '<div id="root"></div>'
+    return rendered.replace('<div id="root"></div>', f'{snapshot_html}\n  {root_html}', 1)
 
 # Initialize default roles on startup
 async def init_default_roles():
@@ -1143,12 +1574,13 @@ if os.path.exists(dist_folder):
         request_path = "/" if not full_path else f"/{full_path.strip('/')}"
         metadata = build_route_seo(request_path, request)
         use_vite_template = request.headers.get("x-use-vite-template") == "1"
+        bot_mode = is_bot_request(request)
         template_path = (
             os.path.join(client_folder, "index.html")
             if use_vite_template
             else os.path.join(dist_folder, "index.html")
         )
-        rendered_html = render_index_html(load_html_template(template_path), metadata)
+        rendered_html = render_index_html(load_html_template(template_path), metadata, bot_mode=bot_mode)
         return HTMLResponse(content=rendered_html)
 
 # =============================================================================

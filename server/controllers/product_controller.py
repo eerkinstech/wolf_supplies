@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+import inspect
 
 try:
     from .productController import (
@@ -20,7 +21,10 @@ except Exception as e:
 
 async def get_products(*args, **kwargs):
     if _get_products:
-        return await _get_products(*args, **kwargs)
+        result = _get_products(*args, **kwargs)
+        if inspect.isawaitable(result):
+            return await result
+        return result
     raise HTTPException(status_code=501, detail="get_products not available")
 
 async def get_product_by_id(product_id: str):

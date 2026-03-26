@@ -41,7 +41,7 @@ const Footer = () => {
               <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <img src="/Wolf Supplies LTD.png" alt="Wolf Supplies" className="h-auto w-auto object-cover" />
               </h3>
-              <p className="text-[var(--color-text-light)] mb-4">Wolf Suppliesis a company registered in the United Kingdom. Your trusted UK online shopping destination for quality products at competitive prices.</p>
+              <p className="text-[var(--color-text-light)] mb-4">Wolf Supplies a company registered in the United Kingdom. Your trusted UK online shopping destination for quality products at competitive prices.</p>
               <p className="text-[var(--color-text-primary)] text-sm mb-2"><strong>Company Number:</strong> <a href="https://find-and-update.company-information.service.gov.uk/company/16070029" target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-light)] hover:text-[var(--color-accent-primary)]">16070029</a></p>
 
             </div>
