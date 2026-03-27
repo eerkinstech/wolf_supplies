@@ -284,7 +284,7 @@ const CouponManagement = () => {
                 <div className="flex gap-3">
                     <button
                         onClick={() => fetchCoupons()}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition"
+                        className="flex items-center gap-2 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition"
                         title="Refresh coupon list"
                     >
                         <i className="fas fa-sync"></i> Refresh

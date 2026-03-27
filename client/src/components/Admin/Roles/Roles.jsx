@@ -562,7 +562,7 @@ const Roles = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50"
+                    className="flex-1 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50"
                   >
                     {loading ? 'Saving...' : editingRole ? 'Update Role' : 'Create Role'}
                   </button>
@@ -658,7 +658,7 @@ const Roles = () => {
                           <button
                             onClick={() => handleEdit(role)}
                             disabled={role.isSystem}
-                            className="text-blue-600 hover:text-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-[var(--color-accent-primary)] hover:text-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             title={role.isSystem ? 'Cannot edit system roles' : 'Edit role'}
                           >
                             <i className="fas fa-edit"></i>
@@ -831,7 +831,7 @@ const Roles = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50"
+                    className="flex-1 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50"
                   >
                     {loading ? 'Saving...' : editingEmployee ? 'Update Employee' : 'Create Employee'}
                   </button>
@@ -909,7 +909,7 @@ const Roles = () => {
                         <td className="px-6 py-4 text-center space-x-3">
                           <button
                             onClick={() => handleEditEmployee(emp)}
-                            className="text-blue-600 hover:text-blue-800 transition"
+                            className="text-[var(--color-accent-primary)] hover:text-blue-800 transition"
                             title="Edit employee"
                           >
                             <i className="fas fa-edit"></i>

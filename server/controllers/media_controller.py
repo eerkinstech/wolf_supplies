@@ -65,7 +65,11 @@ async def upload_media(file: UploadFile = File(...)):
         # Save to MongoDB
         coll = db.get_collection("media")
         result = coll.insert_one(media_doc)
-        media_doc["_id"] = str(result.inserted_id)
+        media_id = str(result.inserted_id)
+        server_url = f"/api/media/serve/{media_id}"
+        coll.update_one({"_id": result.inserted_id}, {"$set": {"url": server_url}})
+        media_doc["_id"] = media_id
+        media_doc["url"] = server_url
 
         print(f"[upload_media] File saved successfully: {unique_filename}")
         return {
@@ -73,8 +77,10 @@ async def upload_media(file: UploadFile = File(...)):
             "filename": unique_filename,
             "original_filename": file.filename,
             "type": asset_type,
-            "url": f"/uploads/{unique_filename}",
-            "_id": str(result.inserted_id),
+            "url": server_url,
+            "serverUrl": server_url,
+            "publicUrl": f"/uploads/{unique_filename}",
+            "_id": media_id,
         }
     except HTTPException:
         raise

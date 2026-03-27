@@ -12,6 +12,15 @@ client = MongoClient(DATABASE_URL)
 db = client[os.getenv("MONGO_DB_NAME", "ecommerce")]
 
 
+def _normalize_asset_url(value):
+    if isinstance(value, str) and ("/uploads/" in value or "/api/media/serve/" in value):
+        if "/uploads/" in value:
+            return f"/uploads/{value.split('/uploads/', 1)[1]}"
+        if "/api/media/serve/" in value:
+            return f"/api/media/serve/{value.split('/api/media/serve/', 1)[1]}"
+    return value
+
+
 def _serialize_cat(doc: Dict) -> Dict:
     if not doc:
         return {}
@@ -23,6 +32,8 @@ def _serialize_cat(doc: Dict) -> Dict:
             result[k] = _serialize_cat(v)
         elif isinstance(v, list):
             result[k] = [_serialize_cat(item) if isinstance(item, dict) else (str(item) if isinstance(item, ObjectId) else item) for item in v]
+        elif isinstance(v, str):
+            result[k] = _normalize_asset_url(v)
         else:
             result[k] = v
     return result

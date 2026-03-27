@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 const ProductFilter = ({ filters, onFilterChange, maxPrice = 100 }) => {
   const [availabilityOpen, setAvailabilityOpen] = useState(true);
   const [priceOpen, setPriceOpen] = useState(true);
+  const [sortOpen, setSortOpen] = useState(true);
 
   const handleAvailabilityChange = (status) => {
     const newAvailability = filters.availability || [];
@@ -21,7 +22,8 @@ const ProductFilter = ({ filters, onFilterChange, maxPrice = 100 }) => {
   };
 
   const handlePriceChange = (field, value) => {
-    const numValue = parseFloat(value) || 0;
+    const parsedValue = parseFloat(value);
+    const numValue = Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0;
     const currentPrice = filters.price || { min: 0, max: maxPrice };
     onFilterChange({
       price: {
@@ -33,9 +35,11 @@ const ProductFilter = ({ filters, onFilterChange, maxPrice = 100 }) => {
 
   const currentPrice = filters.price || { min: 0, max: maxPrice };
   const availability = filters.availability || [];
-
-  // Use the actual maxPrice from products, but keep the filter value if user set a custom max
-  const displayMaxPrice = currentPrice.max === 10000 || currentPrice.max === 0 ? maxPrice : currentPrice.max;
+  const sort = filters.sort || '';
+  const displayMinPrice = Math.max(0, currentPrice.min || 0);
+  const displayMaxPrice = currentPrice.max === 10000 || currentPrice.max === 0
+    ? maxPrice
+    : Math.max(displayMinPrice, currentPrice.max);
 
   return (
     <div className="bg-white rounded-lg p-6 space-y-0">
@@ -76,6 +80,33 @@ const ProductFilter = ({ filters, onFilterChange, maxPrice = 100 }) => {
         )}
       </div>
 
+      {/* Sort Filter */}
+      <div className="border-b border-gray-300">
+        <button
+          onClick={() => setSortOpen(!sortOpen)}
+          className="w-full flex items-center justify-between py-4 hover:bg-gray-50 transition"
+        >
+          <h3 className="text-lg font-semibold text-gray-900">Sort</h3>
+          {sortOpen ? <i className="fas fa-chevron-up text-gray-600"></i> : <i className="fas fa-chevron-down text-gray-600"></i>}
+        </button>
+
+        {sortOpen && (
+          <div className="pb-4">
+            <select
+              value={sort}
+              onChange={(e) => onFilterChange({ sort: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-gray-500"
+            >
+              <option value="">Default</option>
+              <option value="name_asc">A to Z</option>
+              <option value="name_desc">Z to A</option>
+              <option value="price_high_to_low">Highest Price</option>
+              <option value="price_low_to_high">Lowest Price</option>
+            </select>
+          </div>
+        )}
+      </div>
+
       {/* Price Filter */}
       <div className="border-b border-gray-300">
         <button
@@ -94,9 +125,10 @@ const ProductFilter = ({ filters, onFilterChange, maxPrice = 100 }) => {
                 <span className="text-gray-600 font-semibold">£</span>
                 <input
                   type="number"
-                  value={currentPrice.min}
+                  value={displayMinPrice}
                   onChange={(e) => handlePriceChange('min', e.target.value)}
                   placeholder="0"
+                  min="0"
                   className="bg-gray-100 w-20 outline-none text-gray-900 font-semibold text-center"
                 />
               </div>
@@ -107,6 +139,7 @@ const ProductFilter = ({ filters, onFilterChange, maxPrice = 100 }) => {
                   type="number"
                   value={displayMaxPrice}
                   onChange={(e) => handlePriceChange('max', e.target.value)}
+                  min="0"
                   max={maxPrice}
                   className="bg-gray-100 w-20 outline-none text-gray-900 font-semibold text-center"
                 />

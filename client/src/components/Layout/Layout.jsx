@@ -188,7 +188,10 @@ const Layout = ({ children, showMenuSlider = false }) => {
                                     <Link
                                         key={item.id || `m_${idx}`}
                                         to={link}
-                                        onMouseEnter={() => { setBrowseOpen(true); setActiveMenuPath([idx]); }}
+                                        onMouseEnter={() => {
+                                            setActiveMenuPath([idx]);
+                                            setBrowseOpen(hasSubmenu);
+                                        }}
                                         onClick={() => { setBrowseOpen(false); setActiveMenuPath([0]); }}
                                         className={`w-full text-left px-6 py-4 border-b border-[var(--color-border-light)] transition duration-150 font-semibold text-base flex items-center justify-between no-underline ${activeMenuPath[0] === idx
                                             ? 'bg-white text-[var(--color-accent-primary)]'

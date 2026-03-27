@@ -19,6 +19,17 @@ const ProductCard = ({ product }) => {
 
   const hasVariants =
     product.variantCombinations && product.variantCombinations.length > 0;
+  const variantPrices = hasVariants
+    ? product.variantCombinations
+        .map((variant) => Number(variant?.price || 0))
+        .filter((price) => price > 0)
+    : [];
+  const displayPrice = hasVariants
+    ? Number(
+        product.listingPrice ??
+        (variantPrices.length > 0 ? Math.min(...variantPrices) : product.price || 0)
+      )
+    : Number(product.price || 0);
 
   const allImages =
     product.images && product.images.length > 0
@@ -101,18 +112,16 @@ const ProductCard = ({ product }) => {
 
   const productUrl = product.slug || product._id;
 
-  // Check if product is in stock - for variants check variant stock, otherwise check base stock
+  // Variant products are in stock if any variant still has stock.
   let isInStock = false;
-  let availableStock = 0;
 
-  if (hasVariants && product.variantCombinations && product.variantCombinations[0]) {
-    // For variant products, check if first variant has stock
-    availableStock = product.variantCombinations[0].stock || 0;
-    isInStock = availableStock > 0;
+  if (hasVariants) {
+    isInStock = product.variantCombinations.some(
+      (variant) => Number(variant?.stock || 0) > 0
+    );
   } else {
-    // For non-variant products
-    availableStock = product.stock || 0;
-    isInStock = product.inStock || (availableStock > 0);
+    const availableStock = Number(product.stock || 0);
+    isInStock = Boolean(product.inStock) || availableStock > 0;
   }
 
 
@@ -186,9 +195,7 @@ const ProductCard = ({ product }) => {
                 </span>
                 <span className="text-lg font-bold text-[var(--color-accent-primary)]">
                   £
-                  {product.variantCombinations[0].price?.toFixed(2) ||
-                    product.price?.toFixed(2) ||
-                    '0.00'}
+                  {displayPrice.toFixed(2)}
                 </span>
               </>
             ) : (

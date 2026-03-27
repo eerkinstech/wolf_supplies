@@ -320,7 +320,7 @@ const URLRedirectManagement = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                         <div className="text-sm text-gray-600">Total</div>
-                        <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
+                        <div className="text-2xl font-bold text-[var(--color-accent-primary)]">{stats.total}</div>
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                         <div className="text-sm text-gray-600">Active</div>
@@ -384,7 +384,7 @@ const URLRedirectManagement = () => {
                     )}
                     <button
                         onClick={() => handleOpenModal()}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        className="px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-blue-700"
                     >
                         + Add Redirect
                     </button>
@@ -435,7 +435,7 @@ const URLRedirectManagement = () => {
                                                 className="cursor-pointer"
                                             />
                                         </td>
-                                        <td className="px-2 py-3 font-mono text-[10px] text-blue-600">{redirect.fromUrl}</td>
+                                        <td className="px-2 py-3 font-mono text-[10px] text-[var(--color-accent-primary)]">{redirect.fromUrl}</td>
                                         <td className="px-2 py-3 font-mono text-[10px] text-green-600">{redirect.toUrl}</td>
                                         <td className="px-2 py-3">
                                             <button
@@ -547,7 +547,7 @@ const URLRedirectManagement = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    className="flex-1 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-blue-700"
                                 >
                                     {editingId ? 'Update' : 'Create'} Redirect
                                 </button>

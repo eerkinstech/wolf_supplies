@@ -284,11 +284,11 @@ const ContactUsPage = () => {
               <h3 className="font-bold text-xl text-gray-900 mb-4">Company Information</h3>
               <ul className="text-gray-700 space-y-3 text-sm">
                 <li><strong>Business Name:</strong> Wolf Supplies Limited</li>
-                <li><strong>Company Number:</strong> <a href="https://find-and-update.company-information.service.gov.uk/company/16070029" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">16070029</a> (UK Companies House)</li>
+                <li><strong>Company Number:</strong> <a href="https://find-and-update.company-information.service.gov.uk/company/16070029" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-primary)] hover:underline">16070029</a> (UK Companies House)</li>
                 <li><strong>Trading Address:</strong> Unit 4 Atlas Estates, Colebrook Road, Birmingham, West Midlands, B11 2NT, United Kingdom</li>
-                <li><strong>Website:</strong> <a href="https://wolfsupplies.co.uk" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">wolfsupplies.co.uk</a></li>
-                <li><strong>Email:</strong> <a href="mailto:sales@wolfsupplies.co.uk" className="text-blue-600 hover:underline">sales@wolfsupplies.co.uk</a></li>
-                <li><strong>Phone:</strong> <a href="tel:+447398998101" className="text-blue-600 hover:underline">+44 7398 998101</a></li>
+                <li><strong>Website:</strong> <a href="https://wolfsupplies.co.uk" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-primary)] hover:underline">wolfsupplies.co.uk</a></li>
+                <li><strong>Email:</strong> <a href="mailto:sales@wolfsupplies.co.uk" className="text-[var(--color-accent-primary)] hover:underline">sales@wolfsupplies.co.uk</a></li>
+                <li><strong>Phone:</strong> <a href="tel:+447398998101" className="text-[var(--color-accent-primary)] hover:underline">+44 7398 998101</a></li>
               </ul>
             </div>
 
@@ -312,9 +312,9 @@ const ContactUsPage = () => {
             <div className="grid md:grid-cols-3 gap-4">
               <Link
                 to="/policies/shipping"
-                className="p-4 border-2 border-blue-600 rounded-lg hover:bg-blue-50 transition text-center"
+                className="p-4 border-2 border-[var(--color-accent-primary)] rounded-lg hover:bg-blue-50 transition text-center"
               >
-                <div className="font-bold text-blue-600 mb-2">📦 Shipping Policy</div>
+                <div className="font-bold text-[var(--color-accent-primary)] mb-2">📦 Shipping Policy</div>
                 <p className="text-sm text-gray-600">2-4 business day delivery, free UK shipping</p>
               </Link>
               <Link

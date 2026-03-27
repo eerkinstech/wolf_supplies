@@ -33,7 +33,7 @@ const ProductDetailPage = () => {
   // Gallery & review state
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [thumbStart, setThumbStart] = useState(0);
-  const THUMB_VISIBLE = 7;
+  const MOBILE_THUMB_VISIBLE = 4;
   const thumbContainerRef = useRef(null);
   const [showThumbLeftShadow, setShowThumbLeftShadow] = useState(false);
   const [showThumbRightShadow, setShowThumbRightShadow] = useState(false);
@@ -409,20 +409,53 @@ const ProductDetailPage = () => {
   const displayImages = getDisplayImages();
   const currentDisplayImage = displayImages && displayImages.length > 0 ? displayImages[currentImageIndex] : (product?.image || '🛍️');
 
+  const [isMobileGallery, setIsMobileGallery] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
+  );
+  const visibleThumbnails = isMobileGallery
+    ? displayImages.slice(thumbStart, thumbStart + MOBILE_THUMB_VISIBLE)
+    : displayImages;
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileGallery(window.innerWidth < 1024);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Keep thumbnail window in sync with current image
   useEffect(() => {
     if (!displayImages || displayImages.length === 0) {
       setThumbStart(0);
       return;
     }
-    // keep thumbStart in bounds (used for legacy fallbacks)
-    setThumbStart((s) => Math.max(0, Math.min(Math.max(0, displayImages.length - THUMB_VISIBLE), s)));
-  }, [currentImageIndex, displayImages]);
+    if (!isMobileGallery) {
+      setThumbStart(0);
+      return;
+    }
+    const maxStart = Math.max(0, displayImages.length - MOBILE_THUMB_VISIBLE);
+    setThumbStart((start) => {
+      let nextStart = Math.max(0, Math.min(maxStart, start));
+
+      if (currentImageIndex < nextStart) {
+        nextStart = currentImageIndex;
+      } else if (currentImageIndex >= nextStart + MOBILE_THUMB_VISIBLE) {
+        nextStart = currentImageIndex - MOBILE_THUMB_VISIBLE + 1;
+      }
+
+      return Math.max(0, Math.min(maxStart, nextStart));
+    });
+  }, [currentImageIndex, displayImages, isMobileGallery]);
 
   // center active thumbnail in scrollable container when index changes
   useEffect(() => {
     const el = thumbContainerRef.current;
     if (!el) return;
+    if (isMobileGallery) {
+      setShowThumbLeftShadow(false);
+      setShowThumbRightShadow(false);
+      return;
+    }
     const child = el.querySelectorAll('button')[currentImageIndex];
     if (child) {
       // Manually scroll the container without using scrollIntoView (avoids main page scroll)
@@ -450,12 +483,17 @@ const ProductDetailPage = () => {
       setShowThumbRightShadow(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
     };
     updateShadows();
-  }, [currentImageIndex, displayImages]);
+  }, [currentImageIndex, displayImages, isMobileGallery]);
 
   // attach scroll handler to update overlays
   useEffect(() => {
     const el = thumbContainerRef.current;
     if (!el) return;
+    if (isMobileGallery) {
+      setShowThumbLeftShadow(false);
+      setShowThumbRightShadow(false);
+      return;
+    }
     const handler = () => {
       setShowThumbLeftShadow(el.scrollLeft > 8);
       setShowThumbRightShadow(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
@@ -464,7 +502,7 @@ const ProductDetailPage = () => {
     // initial
     handler();
     return () => el.removeEventListener('scroll', handler);
-  }, [displayImages]);
+  }, [displayImages, isMobileGallery]);
 
   const handleAddToCart = async () => {
     if (product) {
@@ -968,12 +1006,14 @@ const ProductDetailPage = () => {
         {/* Breadcrumb */}
         <div className="bg-[var(--color-bg-primary)] border-b border-[var(--color-border-light)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center gap-2 text-[var(--color-text-light)]">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[var(--color-text-light)]">
               <button onClick={() => navigate('/')} className="hover:text-[var(--color-accent-primary)] transition">Home</button>
               <span>/</span>
               <button onClick={() => navigate('/products')} className="hover:text-[var(--color-accent-primary)] transition">Products</button>
-              <span>/</span>
-              <span className="text-[var(--color-accent-primary)] font-semibold">{product.name}</span>
+              <span className="hidden sm:inline">/</span>
+              <span className="basis-full sm:basis-auto text-[var(--color-accent-primary)] font-semibold break-words">
+                {product.name}
+              </span>
             </div>
           </div>
         </div>
@@ -988,35 +1028,36 @@ const ProductDetailPage = () => {
                 <div className="flex flex-col lg:flex-row gap-3 w-full">
                   {/* Left Side: Thumbnail Gallery - Horizontal on Mobile, Vertical on Desktop */}
                   {displayImages.length > 1 && (
-                    <div className="w-full lg:flex-shrink-0 lg:w-auto">
+                    <div className="w-full max-w-full lg:flex-shrink-0 lg:w-auto">
                       {/* Thumbnails Container - Responsive */}
                       <div
                         ref={thumbContainerRef}
-                        className="flex lg:flex-col gap-2 lg:gap-3 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden px-1 rounded-lg hide-scrollbar"
+                        className="flex w-full max-w-full lg:flex-col gap-2 lg:gap-3 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden px-1 rounded-lg hide-scrollbar"
                         style={{
                           height: 'auto',
                           minHeight: 'auto',
                           scrollBehavior: 'smooth',
-                          maxWidth: '400px',
+                          maxWidth: '100%',
                           maxHeight: '500px',
                           lg: { maxHeight: '500px', maxWidth: 'none', minWidth: '120px', minHeight: '400px' }
                         }}
                       >
                         {displayImages && displayImages.length > 0 ? (
-                          displayImages.map((img, idx) => {
+                          visibleThumbnails.map((img, idx) => {
+                            const actualIndex = isMobileGallery ? thumbStart + idx : idx;
                             return (
                               <button
-                                key={idx}
-                                onClick={() => setCurrentImageIndex(idx)}
-                                className={`flex-shrink-0 w-16 h-16 lg:w-20 lg:h-20 rounded-lg overflow-hidden border-3 transition-all duration-300 hover:scale-105 ${currentImageIndex === idx
+                                key={actualIndex}
+                                onClick={() => setCurrentImageIndex(actualIndex)}
+                                className={`flex-shrink-0 w-[calc(25%-0.375rem)] h-16 min-w-0 lg:w-20 lg:h-20 rounded-lg overflow-hidden border-3 transition-all duration-300 hover:scale-105 ${currentImageIndex === actualIndex
                                   ? 'border-[var(--color-accent-primary)] shadow-lg'
                                   : 'border-[var(--color-border-light)] hover:border-[var(--color-accent-primary)] shadow-sm'
                                   }`}
                               >
                                 <img
-                                  key={`thumb-${idx}`}
+                                  key={`thumb-${actualIndex}`}
                                   src={getImgSrc(img)}
-                                  alt={`Thumbnail ${idx + 1}`}
+                                  alt={`Thumbnail ${actualIndex + 1}`}
                                   className="w-full h-full object-contain"
                                   onError={(e) => {
                                     e.target.style.opacity = '0';
@@ -1069,11 +1110,7 @@ const ProductDetailPage = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setCurrentImageIndex((idx) => {
-                                const newIdx = (idx - 1 + displayImages.length) % displayImages.length;
-                                setThumbStart((s) => Math.max(0, Math.min(Math.max(0, displayImages.length - THUMB_VISIBLE), s - 1)));
-                                return newIdx;
-                              });
+                              setCurrentImageIndex((idx) => (idx - 1 + displayImages.length) % displayImages.length);
                             }}
                             className="absolute left-4 top-1/2 -translate-y-1/2 bg-[var(--color-accent-primary)] bg-opacity-70 hover:bg-opacity-100 text-white p-3 rounded-full transition-all z-10 shadow-lg flex items-center justify-center"
                             aria-label="Previous image"
@@ -1083,11 +1120,7 @@ const ProductDetailPage = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setCurrentImageIndex((idx) => {
-                                const newIdx = (idx + 1) % displayImages.length;
-                                setThumbStart((s) => Math.min(Math.max(0, displayImages.length - THUMB_VISIBLE), s + 1));
-                                return newIdx;
-                              });
+                              setCurrentImageIndex((idx) => (idx + 1) % displayImages.length);
                             }}
                             className="absolute right-4 top-1/2 -translate-y-1/2 bg-[var(--color-accent-primary)] bg-opacity-70 hover:bg-opacity-100 text-white p-3 rounded-full transition-all z-10 shadow-lg flex items-center justify-center"
                             aria-label="Next image"
@@ -1492,15 +1525,15 @@ const ProductDetailPage = () => {
           {/* Zoom Modal with Mouse-Based Magnification */}
           {showZoomModal && displayImages.length > 0 && (
             <div
-              className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+              className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-3 sm:p-4"
               onClick={() => setShowZoomModal(false)}
             >
               <div
-                className="relative w-full max-w-5xl flex items-center justify-center gap-6"
+                className="relative w-full max-w-5xl flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-6"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Left Side: Main Image with Mouse Tracking */}
-                <div className="flex-1 flex flex-col items-center justify-center">
+                <div className="w-full flex-1 flex flex-col items-center justify-center">
                   <div
                     ref={zoomImageRef}
                     className="relative bg-white rounded-lg overflow-hidden shadow-2xl cursor-crosshair"
@@ -1512,7 +1545,7 @@ const ProductDetailPage = () => {
                       setZoomMousePos({ x, y });
                     }}
                     onMouseLeave={() => setZoomMousePos({ x: 0, y: 0 })}
-                    style={{ maxWidth: '500px', maxHeight: '500px' }}
+                    style={{ width: '100%', maxWidth: '500px', maxHeight: '500px' }}
                   >
                     <img
                       key={`zoom-main-${zoomImageIndex}`}
@@ -1536,7 +1569,7 @@ const ProductDetailPage = () => {
                     />
                   </div>
                   {displayImages.length > 1 && (
-                    <div className="flex gap-3 m-5 justify-center">
+                    <div className="flex gap-3 m-4 sm:m-5 justify-center">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1565,10 +1598,10 @@ const ProductDetailPage = () => {
                 </div>
 
                 {/* Right Side: Magnified View */}
-                <div className="flex-1 flex flex-col justify-center items-center gap-4">
+                <div className="w-full flex-1 flex flex-col justify-center items-center gap-4">
                   <div
                     className="relative bg-[var(--color-bg-primary)] rounded-lg overflow-hidden shadow-2xl border-4 border-[var(--color-border-light)]"
-                    style={{ width: '300px', height: '300px' }}
+                    style={{ width: '100%', maxWidth: '300px', aspectRatio: '1 / 1' }}
                   >
                     <img
                       key={`zoom-magnified-${zoomImageIndex}`}

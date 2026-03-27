@@ -218,7 +218,7 @@ toast.error('Failed to send message');
                                 <button
                                     type="submit"
                                     disabled={sendingMessage || !message.trim()}
-                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition text-sm whitespace-nowrap h-fit"
+                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition text-sm whitespace-nowrap h-fit"
                                 >
                                     <i className="fas fa-paper-plane" style={{ fontSize: '14px' }}></i>
                                     {sendingMessage ? 'Sending...' : 'Send'}

@@ -14,6 +14,7 @@ const initialState = {
     category: '',
     price: { min: 0, max: 10000 },
     search: '',
+    sort: '',
   },
 };
 
@@ -85,6 +86,7 @@ const productSlice = createSlice({
         category: '',
         price: { min: 0, max: 10000 },
         search: '',
+        sort: '',
       };
     },
   },

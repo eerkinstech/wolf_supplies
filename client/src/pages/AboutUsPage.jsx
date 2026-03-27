@@ -195,7 +195,7 @@ const AboutUsPage = () => {
                   {warehouseImages[0] ? (
                     <img src={warehouseImages[0]} alt="Main Warehouse" className="object-cover w-full h-full" />
                   ) : (
-                    <div className="h-full w-full bg-linear-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                    <div className="h-full w-full bg-linear-to-br from-blue-400 to-[var(--color-accent-primary)] flex items-center justify-center">
                       <div className="text-6xl">🏭</div>
                     </div>
                   )}

@@ -27,7 +27,7 @@ const AccountPageContent = () => {
                 {!token && (
                     <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg mb-8">
                         <p className="text-blue-700 font-semibold mb-3">Guest Mode</p>
-                        <p className="text-blue-600 mb-4">You're browsing as a guest. You can view your order details by entering the order ID from your confirmation email.</p>
+                        <p className="text-[var(--color-accent-primary)] mb-4">You're browsing as a guest. You can view your order details by entering the order ID from your confirmation email.</p>
                         <Link to="/order-lookup" className="inline-block text-blue-700 font-bold hover:underline">Find your order →</Link>
                     </div>
                 )}

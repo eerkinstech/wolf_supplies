@@ -41,7 +41,7 @@ export const Navigator: React.FC<NavigatorProps>=({
             case 'section':
                 return <i className="fas fa-layer-group text-black"></i>;
             case 'column':
-                return <i className="fas fa-columns text-blue-600"></i>;
+                return <i className="fas fa-columns text-[var(--color-accent-primary)]"></i>;
             case 'widget':
                 return <i className="fas fa-boxes text-gray-400"></i>;
             default:
@@ -83,7 +83,7 @@ export const Navigator: React.FC<NavigatorProps>=({
                 <div
                     onClick={() => onSelectNode?.(node.id)}
                     className={`flex items-center gap-2 px-3 py-2 cursor-pointer transition rounded-md ${isSelected
-                        ? 'bg-blue-100 border-l-4 border-blue-600'
+                        ? 'bg-blue-100 border-l-4 border-[var(--color-accent-primary)]'
                         :'hover:bg-gray-100'
                         }`}
                     style={{ paddingLeft: `${depth*16+12}px` }}

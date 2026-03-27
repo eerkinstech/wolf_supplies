@@ -285,7 +285,7 @@ export const ControlRenderer: React.FC<ControlRendererProps>=({
                   key={opt}
                   onClick={() => onChange(opt)}
                   className={`px-3 py-1.5 rounded text-xs font-medium transition ${val===opt
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-[var(--color-accent-primary)] text-white'
                     :'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   title={opt}
@@ -708,7 +708,7 @@ export const ControlRenderer: React.FC<ControlRendererProps>=({
               {/* Add Button */}
               <button
                 onClick={addItem}
-                className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded transition"
+                className="w-full px-3 py-2 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white text-xs font-semibold rounded transition"
               >
                 + Add Item
               </button>
@@ -803,7 +803,7 @@ export const ControlRenderer: React.FC<ControlRendererProps>=({
                 placeholder="e.g., fas fa-star, fab fa-facebook"
                 className="w-full px-2 py-2 border border-blue-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <p className="text-xs text-blue-600 mt-1">Type any FontAwesome class name</p>
+              <p className="text-xs text-[var(--color-accent-primary)] mt-1">Type any FontAwesome class name</p>
             </div>
 
             {/* Display current selection */}
@@ -959,7 +959,7 @@ alert('Upload error. Please try again.');
 
         {!useUrl? (
           <div className="flex gap-2">
-            <label className={`flex-1 px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded cursor-pointer transition text-center ${isUploading? 'opacity-50 cursor-not-allowed':''}`}>
+            <label className={`flex-1 px-2 py-1.5 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white text-xs font-medium rounded cursor-pointer transition text-center ${isUploading? 'opacity-50 cursor-not-allowed':''}`}>
               {isUploading? 'Uploading...':'Upload'}
               <input
                 type="file"

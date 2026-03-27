@@ -586,7 +586,7 @@ const ProductManagement = () => {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
         <div className="flex gap-3">
-          <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition duration-300 cursor-pointer">
+          <label className="flex items-center gap-2 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition duration-300 cursor-pointer">
             📥 Import Products
             <input
               type="file"
@@ -660,7 +660,7 @@ const ProductManagement = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => handleExportSelected()}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold transition"
+              className="px-4 py-2 bg-blue-500 hover:bg-[var(--color-accent-primary)] text-white rounded-lg text-sm font-semibold transition"
               title="Export selected products as JSON"
             >
               📥 Export

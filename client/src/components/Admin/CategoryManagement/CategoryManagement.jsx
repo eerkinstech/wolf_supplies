@@ -409,7 +409,7 @@ const NestedCategoryRows = ({
     const colorSchemes = [
         { bg: 'bg-indigo-50', border: 'border-indigo-400', text: 'text-gray-700', gradient: 'from-indigo-400 to-indigo-600' },
         { bg: 'bg-gray-50', border: 'border-gray-400', text: 'text-gray-400', gradient: 'from-gray-700 to-black-400' },
-        { bg: 'bg-gray-100', border: 'border-blue-400', text: 'text-gray-700', gradient: 'from-blue-400 to-blue-600' },
+        { bg: 'bg-gray-100', border: 'border-blue-400', text: 'text-gray-700', gradient: 'from-blue-400 to-[var(--color-accent-primary)]' },
         { bg: 'bg-purple-50', border: 'border-purple-400', text: 'text-purple-600', gradient: 'from-purple-400 to-purple-600' },
         { bg: 'bg-pink-50', border: 'border-pink-400', text: 'text-pink-600', gradient: 'from-pink-400 to-pink-600' },
         { bg: 'bg-cyan-50', border: 'border-cyan-400', text: 'text-cyan-600', gradient: 'from-cyan-400 to-cyan-600' },

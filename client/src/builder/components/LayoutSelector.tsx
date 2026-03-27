@@ -30,7 +30,7 @@ export const LayoutSelector: React.FC<LayoutSelectorProps>=({ onSelect, onClose 
                                 </div>
                             </div>
                         </div>
-                        <span className="font-semibold text-gray-900 group-hover:text-blue-600 transition">Flexbox</span>
+                        <span className="font-semibold text-gray-900 group-hover:text-[var(--color-accent-primary)] transition">Flexbox</span>
                         <p className="text-xs text-gray-600 text-center">Row-based flexible layout</p>
                     </button>
 
@@ -48,7 +48,7 @@ export const LayoutSelector: React.FC<LayoutSelectorProps>=({ onSelect, onClose 
                                 <div className="w-6 h-6 bg-white bg-opacity-70 rounded"></div>
                             </div>
                         </div>
-                        <span className="font-semibold text-gray-900 group-hover:text-blue-600 transition">Grid</span>
+                        <span className="font-semibold text-gray-900 group-hover:text-[var(--color-accent-primary)] transition">Grid</span>
                         <p className="text-xs text-gray-600 text-center">Column-based grid layout</p>
                     </button>
                 </div>

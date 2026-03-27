@@ -10,10 +10,10 @@ const AboutSection = () => {
                 {/* Welcome Section */}
                 <div className="mb-12">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6" style={{ color: 'var(--color-text-primary)' }}>
-                        Wolf Supplies- Online Retailer
+                        Premium Stairnosing, Rubber Matting & Tarpaulins
                     </h2>
                     <p className="text-lg leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-                        <span style={{ color: 'var(--color-text-primary)', fontWeight: 'bold' }}>Wolf Supplies</span> (Company Number: 16070029) is a UK-based online retailer offering a selection of products
+                        <span style={{ color: 'var(--color-text-primary)', fontWeight: 'bold' }}>Wolf Supplies</span> (Company Number: 16070029) is a UK-based online retailer specializing in high-quality stairnosing, rubber matting, and tarpaulins
                         with free UK shipping, 31-day returns, and customer support available Monday-Friday, 9 AM - 6 PM GMT.
                     </p>
                 </div>
@@ -24,7 +24,7 @@ const AboutSection = () => {
                         Products We Offer
                     </h3>
                     <p className="text-lg leading-relaxed mb-8" style={{ color: 'var(--color-text-secondary)' }}>
-                        We offer a selection of products for home, garden, and professional use. All products are sourced from established suppliers.
+                        We specialize in three core product categories: premium stairnosing solutions, durable rubber matting, and high-quality tarpaulins. All products are sourced from established suppliers and designed for both residential and commercial applications.
                     </p>
 
                     {/* Product Categories */}
@@ -32,36 +32,36 @@ const AboutSection = () => {
                         {/* Category 1 */}
                         <div>
                             <h4 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-                                Home & Garden Products
+                                Stairnosing
                             </h4>
                             <ul className="list-disc list-inside space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
-                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Home Improvement</span> - Products for home maintenance and repairs</li>
-                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Garden & Outdoor</span> - Outdoor and landscaping products</li>
-                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Home Accessories</span> - Functional items for living spaces</li>
+                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Safety Stairnosing</span> - Anti-slip stair edge protection for enhanced safety</li>
+                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Decorative Stairnosing</span> - Stylish staircase edging for residential and commercial spaces</li>
+                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Durable Materials</span> - High-quality construction built to last</li>
                             </ul>
                         </div>
 
                         {/* Category 2 */}
                         <div>
                             <h4 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-                                Tools & Commercial Products
+                                Rubber Matting
                             </h4>
                             <ul className="list-disc list-inside space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
-                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Materials & Components</span> - Products from established manufacturers for general use</li>
-                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Tools & Equipment</span> - Durable tools for various applications</li>
-                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Workspace Items</span> - Products for work environments</li>
+                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Industrial Mats</span> - Heavy-duty rubber matting for commercial environments</li>
+                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Playground Matting</span> - Safety mats for recreational areas</li>
+                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Anti-Fatigue Mats</span> - Comfort solutions for workplaces and facilities</li>
                             </ul>
                         </div>
 
                         {/* Category 3 */}
                         <div>
                             <h4 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-                                Product Information
+                                Tarpaulins
                             </h4>
                             <ul className="list-disc list-inside space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
-                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Product Details</span> - Detailed descriptions and specifications provided for all items</li>
-                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Sourced Products</span> - Products sourced from established suppliers</li>
-                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Returns & Support</span> - 31-day return policy and customer support available</li>
+                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Waterproof Covers</span> - Premium tarpaulins for weather protection</li>
+                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Heavy-Duty Options</span> - Reinforced tarpaulins for demanding applications</li>
+                                <li><span style={{ color: 'var(----color-text-primary)', fontWeight: 'bold' }}>Various Sizes</span> - Wide range of sizes to suit any project</li>
                             </ul>
                         </div>
                     </div>
@@ -121,20 +121,20 @@ const AboutSection = () => {
                 {/* One Stop Source Section */}
                 <div className="mb-12">
                     <h3 className="text-3xl font-bold mb-6" style={{ color: 'var(--color-text-primary)' }}>
-                        Shopping with Wolf Supplies
+                        Your Single Source for Quality Products
                     </h3>
                     <p className="text-lg leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-                        <span style={{ color: 'var(--color-text-primary)', fontWeight: 'bold' }}>Wolf Supplies</span> offers a selection of products for home and professional use. We provide product information, competitive pricing, secure payment processing through Stripe, free UK shipping, and a 31-day returns policy.
+                        <span style={{ color: 'var(--color-text-primary)', fontWeight: 'bold' }}>Wolf Supplies</span> provides premium stairnosing, rubber matting, and tarpaulins for residential and commercial applications. We deliver competitive pricing, secure payment processing through Stripe, free UK shipping, and exceptional customer support.
                     </p>
                 </div>
 
                 {/* Get Started Section */}
                 <div className="p-8 rounded-lg" style={{ backgroundColor: 'var(--color-accent-primary)' }}>
                     <h3 className="text-3xl font-bold mb-6" style={{ color: 'var(--color-bg-primary)' }}>
-                        Browse Our Products
+                        Explore Our Premium Products
                     </h3>
                     <p className="text-lg leading-relaxed mb-6" style={{ color: 'var(--color-bg-primary)' }}>
-                        Explore our product categories. All orders ship free to UK addresses within 2-4 business days. Payments are processed securely through Stripe, and we offer a 31-day returns policy. Customer support is available Monday-Friday, 9 AM - 6 PM GMT.
+                        Browse our extensive selection of stairnosing, rubber matting, and tarpaulins. All orders ship free to UK addresses within 2-4 business days. Payments are processed securely through Stripe, and we offer a 31-day returns policy for complete peace of mind.
                     </p>
                     <Link 
                         to="/products"

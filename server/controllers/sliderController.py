@@ -11,6 +11,15 @@ if not DATABASE_URL:
 client = MongoClient(DATABASE_URL)
 db = client[os.getenv("MONGO_DB_NAME", "ecommerce")]
 
+
+def _normalize_asset_url(value):
+    if isinstance(value, str) and ("/uploads/" in value or "/api/media/serve/" in value):
+        if "/uploads/" in value:
+            return f"/uploads/{value.split('/uploads/', 1)[1]}"
+        if "/api/media/serve/" in value:
+            return f"/api/media/serve/{value.split('/api/media/serve/', 1)[1]}"
+    return value
+
 def _serialize(doc: dict):
     # Recursively convert ObjectId to string and ensure dicts/lists are plain Python types
     if doc is None:
@@ -26,6 +35,8 @@ def _serialize(doc: dict):
             return {k: _walk(v) for k, v in o.items()}
         if isinstance(o, list):
             return [_walk(i) for i in o]
+        if isinstance(o, str):
+            return _normalize_asset_url(o)
         return o
 
     return _walk(doc)

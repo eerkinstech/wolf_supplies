@@ -10,6 +10,46 @@ import ProductFilter from '../components/Products/ProductFilter/ProductFilter';
 
 import { Helmet } from 'react-helmet-async';
 
+const getProductPriceRange = (product) => {
+  const basePrice = Number(product?.price || 0);
+  const variantPrices = Array.isArray(product?.variantCombinations)
+    ? product.variantCombinations
+        .map((variant) => Number(variant?.price || 0))
+        .filter((price) => price > 0)
+    : [];
+
+  if (variantPrices.length === 0) {
+    return { min: basePrice, max: basePrice };
+  }
+
+  return {
+    min: Math.min(...variantPrices),
+    max: Math.max(...variantPrices),
+  };
+};
+
+const getMatchingVariantPrices = (product, priceFilter) => {
+  if (!Array.isArray(product?.variantCombinations)) return [];
+
+  return product.variantCombinations
+    .map((variant) => Number(variant?.price || 0))
+    .filter(
+      (price) =>
+        price > 0 &&
+        price >= Number(priceFilter?.min || 0) &&
+        price <= Number(priceFilter?.max || 0)
+    );
+};
+
+const getListingPrice = (product, priceFilter) => {
+  const matchingVariantPrices = getMatchingVariantPrices(product, priceFilter);
+  if (matchingVariantPrices.length > 0) {
+    return Math.min(...matchingVariantPrices);
+  }
+
+  return getProductPriceRange(product).min;
+};
+
 const ProductsPage = () => {
   const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
@@ -43,19 +83,8 @@ const ProductsPage = () => {
 
     let maxPrice = 0;
     productList.forEach((p) => {
-      // Check base price
-      if (p.price > maxPrice) {
-        maxPrice = p.price;
-      }
-      // Check variant prices
-      if (p.variantCombinations && p.variantCombinations.length > 0) {
-        p.variantCombinations.forEach((vc) => {
-          const vcPrice = vc.price || p.price;
-          if (vcPrice > maxPrice) {
-            maxPrice = vcPrice;
-          }
-        });
-      }
+      const { max } = getProductPriceRange(p);
+      maxPrice = Math.max(maxPrice, max);
     });
 
     return maxPrice || 100;
@@ -140,30 +169,31 @@ const ProductsPage = () => {
     // For products with variants: check lowest variant price (ignore blank base price)
     // For products without variants: check base price
     organizingResult = organizingResult.filter((p) => {
-      const hasVariants = p.variants && p.variants.length > 0;
-
-      if (hasVariants && p.variantCombinations && p.variantCombinations.length > 0) {
-        // For variant products: get the lowest available price from variants
-        let lowestVariantPrice = null;
-        for (const vc of p.variantCombinations) {
-          if (vc.price && vc.price > 0) {
-            if (lowestVariantPrice === null || vc.price < lowestVariantPrice) {
-              lowestVariantPrice = vc.price;
-            }
-          }
-        }
-
-        // Use variant price if available, otherwise use base price
-        const priceToCheck = lowestVariantPrice !== null ? lowestVariantPrice : p.price;
-        return priceToCheck >= filters.price.min && priceToCheck <= filters.price.max;
+      const matchingVariantPrices = getMatchingVariantPrices(p, filters.price);
+      if (Array.isArray(p?.variantCombinations) && p.variantCombinations.length > 0) {
+        return matchingVariantPrices.length > 0;
       }
 
-      // For non-variant products, check base price
-      return p.price >= filters.price.min && p.price <= filters.price.max;
-      return basePriceInRange;
+      const basePrice = Number(p.price || 0);
+      return basePrice >= filters.price.min && basePrice <= filters.price.max;
     });
 
-    setFilteredProducts(organizingResult);
+    if (filters.sort === 'name_asc') {
+      organizingResult.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (filters.sort === 'name_desc') {
+      organizingResult.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (filters.sort === 'price_high_to_low') {
+      organizingResult.sort((a, b) => getProductPriceRange(b).max - getProductPriceRange(a).max);
+    } else if (filters.sort === 'price_low_to_high') {
+      organizingResult.sort((a, b) => getProductPriceRange(a).min - getProductPriceRange(b).min);
+    }
+
+    setFilteredProducts(
+      organizingResult.map((product) => ({
+        ...product,
+        listingPrice: getListingPrice(product, filters.price),
+      }))
+    );
   }, [products, filters]);
 
   const hasSearchResults = searchQuery && filteredProducts.length > 0;
@@ -236,21 +266,7 @@ const ProductsPage = () => {
                 </div>
               ) : filteredProducts.length > 0 ? (
                 <div>
-                  {/* Results Summary */}
-                  <div className="mb-8 p-4 bg-gradient-to-r from-[var(--color-bg-section)] to-[var(--color-bg-section)] rounded-lg border border-[var(--color-border-light)]">
-                    <p className="text-[var(--color-text-light)]">
-                      Showing <span className="font-bold text-[var(--color-text-primary)]">{filteredProducts.length}</span> product{filteredProducts.length !== 1 ? 's' : ''}
-                      {searchQuery && (
-                        <span> matching "<span className="font-bold text-[var(--color-accent-primary)]">{searchQuery}</span>"</span>
-                      )}
-                    </p>
-                    {searchQuery && exactMatchCount > 0 && (
-                      <p className="text-sm text-green-700 mt-2">
-                        💡 {exactMatchCount} exact match{exactMatchCount !== 1 ? 'es' : ''} shown first
-                      </p>
-                    )}
-                  </div>
-
+                
                   {/* Products Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {filteredProducts.map((product) => (

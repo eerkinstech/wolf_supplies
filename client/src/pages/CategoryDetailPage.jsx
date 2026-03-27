@@ -13,6 +13,46 @@ import CategoryCard from '../components/Categories/CategoryCard/CategoryCard';
 
 import { Helmet } from 'react-helmet-async';
 
+const getProductPriceRange = (product) => {
+  const basePrice = Number(product?.price || 0);
+  const variantPrices = Array.isArray(product?.variantCombinations)
+    ? product.variantCombinations
+        .map((variant) => Number(variant?.price || 0))
+        .filter((price) => price > 0)
+    : [];
+
+  if (variantPrices.length === 0) {
+    return { min: basePrice, max: basePrice };
+  }
+
+  return {
+    min: Math.min(...variantPrices),
+    max: Math.max(...variantPrices),
+  };
+};
+
+const getMatchingVariantPrices = (product, priceFilter) => {
+  if (!Array.isArray(product?.variantCombinations)) return [];
+
+  return product.variantCombinations
+    .map((variant) => Number(variant?.price || 0))
+    .filter(
+      (price) =>
+        price > 0 &&
+        price >= Number(priceFilter?.min || 0) &&
+        price <= Number(priceFilter?.max || 0)
+    );
+};
+
+const getListingPrice = (product, priceFilter) => {
+  const matchingVariantPrices = getMatchingVariantPrices(product, priceFilter);
+  if (matchingVariantPrices.length > 0) {
+    return Math.min(...matchingVariantPrices);
+  }
+
+  return getProductPriceRange(product).min;
+};
+
 const CategoryDetailPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -60,26 +100,34 @@ const CategoryDetailPage = () => {
   // Calculate the maximum price from all products (for filter display)
   const maxPriceFromProducts = useMemo(() => {
     if (!products || products.length === 0) return 100;
-    
-    let maxPrice = 0;
-    products.forEach((p) => {
-      // Check base price
-      if (p.price > maxPrice) {
-        maxPrice = p.price;
-      }
-      // Check variant prices
-      if (p.variantCombinations && p.variantCombinations.length > 0) {
-        p.variantCombinations.forEach((vc) => {
-          const vcPrice = vc.price || p.price;
-          if (vcPrice > maxPrice) {
-            maxPrice = vcPrice;
+
+    const categoryProducts = selectedCategory
+      ? products.filter((p) => {
+          if (Array.isArray(p.categories)) {
+            return p.categories.some((c) => {
+              if (typeof c === 'object' && c._id) {
+                return c._id === selectedCategory._id;
+              }
+              if (typeof c === 'string') {
+                return c === selectedCategory._id || c === selectedCategory.name;
+              }
+              return false;
+            });
           }
-        });
+          return p.category === selectedCategory._id || p.category === selectedCategory.name;
+        })
+      : products;
+
+    let maxPrice = 0;
+    categoryProducts.forEach((p) => {
+      const { max } = getProductPriceRange(p);
+      if (max > maxPrice) {
+        maxPrice = max;
       }
     });
-    
+
     return maxPrice || 100;
-  }, [products]);
+  }, [products, selectedCategory]);
 
   useEffect(() => {
     let result = products;
@@ -140,29 +188,31 @@ const CategoryDetailPage = () => {
     // For products with variants: check lowest variant price (ignore blank base price)
     // For products without variants: check base price
     result = result.filter((p) => {
-      const hasVariants = p.variants && p.variants.length > 0;
-
-      if (hasVariants && p.variantCombinations && p.variantCombinations.length > 0) {
-        // For variant products: get the lowest available price from variants
-        let lowestVariantPrice = null;
-        for (const vc of p.variantCombinations) {
-          if (vc.price && vc.price > 0) {
-            if (lowestVariantPrice === null || vc.price < lowestVariantPrice) {
-              lowestVariantPrice = vc.price;
-            }
-          }
-        }
-
-        // Use variant price if available, otherwise use base price
-        const priceToCheck = lowestVariantPrice !== null ? lowestVariantPrice : p.price;
-        return priceToCheck >= filters.price.min && priceToCheck <= filters.price.max;
+      const matchingVariantPrices = getMatchingVariantPrices(p, filters.price);
+      if (Array.isArray(p?.variantCombinations) && p.variantCombinations.length > 0) {
+        return matchingVariantPrices.length > 0;
       }
 
-      // For non-variant products, check base price
-      return p.price >= filters.price.min && p.price <= filters.price.max;
+      const basePrice = Number(p.price || 0);
+      return basePrice >= filters.price.min && basePrice <= filters.price.max;
     });
 
-    setFilteredProducts(result);
+    if (filters.sort === 'name_asc') {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (filters.sort === 'name_desc') {
+      result.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (filters.sort === 'price_high_to_low') {
+      result.sort((a, b) => getProductPriceRange(b).max - getProductPriceRange(a).max);
+    } else if (filters.sort === 'price_low_to_high') {
+      result.sort((a, b) => getProductPriceRange(a).min - getProductPriceRange(b).min);
+    }
+
+    setFilteredProducts(
+      result.map((product) => ({
+        ...product,
+        listingPrice: getListingPrice(product, filters.price),
+      }))
+    );
   }, [products, filters, selectedCategory]);
 
   if (loading) {
@@ -329,22 +379,15 @@ const CategoryDetailPage = () => {
 
       {/* Related Categories Section */}
       {selectedCategory.level === 'main' && (
-        <div className="bg-white py-16 px-4 sm:px-6 lg:px-8 mt-16">
+        <div className="bg-white py-8 px-4 sm:px-6 lg:px-8 mt-6">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold text-gray-900 mb-8">Explore More Categories</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
               {categories
                 .filter((cat) => cat.level === 'main' && cat._id !== selectedCategory._id)
-                .slice(0, 4)
+                .slice(0, 5)
                 .map((cat) => (
-                  <button
-                    key={cat._id}
-                    onClick={() => navigate(`/category/${cat.slug}`)}
-                    className={`bg-gradient-to-br ${cat.color} rounded-xl p-6 text-white text-center hover:shadow-lg transition duration-300 transform hover:scale-105`}
-                  >
-                    <div className="text-4xl mb-2">{cat.icon}</div>
-                    <p className="font-bold text-lg">{cat.name}</p>
-                  </button>
+                  <CategoryCard key={cat._id} category={cat} />
                 ))}
             </div>
           </div>

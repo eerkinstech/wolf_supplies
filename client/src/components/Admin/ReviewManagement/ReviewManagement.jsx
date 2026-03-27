@@ -606,7 +606,7 @@ toast.error('Failed to fetch reviews');
                 </div>
                 
                 <div className="flex gap-3">
-                    <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition duration-300 cursor-pointer">
+                    <label className="flex items-center gap-2 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition duration-300 cursor-pointer">
                         📥 Import Reviews
                         <input
                             type="file"

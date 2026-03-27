@@ -1353,7 +1353,7 @@ const AdminAddProductPage = ({ params }) => {
               <button
                 onClick={() => handleSubmit(null, !formData.isDraft)}
                 disabled={loading || Boolean(comparePriceError) || (saveStatus === 'saved' && !hasUnsavedChanges())}
-                className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-1 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save'}
               </button>

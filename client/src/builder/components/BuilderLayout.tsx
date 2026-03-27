@@ -25,7 +25,7 @@ export const BuilderLayout: React.FC<BuilderLayoutProps> = ({}) => {
     return (
         <div className="builder-layout h-screen flex flex-col bg-gray-50">
             {/* Header */}
-            <header className="builder-header bg-linear-to-r from-blue-600 to-blue-700 text-white p-4 shadow-lg">
+            <header className="builder-header bg-linear-to-r from-[var(--color-accent-primary)] to-blue-700 text-white p-4 shadow-lg">
                 <div className="flex items-center justify-between">
                     {/* Left: Title */}
                     <div className="flex items-center gap-3">
@@ -41,7 +41,7 @@ export const BuilderLayout: React.FC<BuilderLayoutProps> = ({}) => {
                                 onClick={() => setCurrentDevice?.(dev)}
                                 className={`px-3 py-2 rounded text-sm font-medium transition ${
                                     currentDevice === dev
-                                        ? 'bg-white text-blue-600'
+                                        ? 'bg-white text-[var(--color-accent-primary)]'
                                         : 'bg-blue-500 text-white hover:bg-blue-400'
                                 }`}
                             >
@@ -59,7 +59,7 @@ export const BuilderLayout: React.FC<BuilderLayoutProps> = ({}) => {
                             className={`px-4 py-2 rounded font-semibold transition ${
                                 saveStatus === 'saving'
                                     ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                                    : 'bg-white text-blue-600 hover:bg-gray-100'
+                                    : 'bg-white text-[var(--color-accent-primary)] hover:bg-gray-100'
                             }`}
                         >
                             {saveStatus === 'saving' ? '⏳ Saving...' : saveStatus === 'saved' ? '✓ Saved' : '💾 Save'}

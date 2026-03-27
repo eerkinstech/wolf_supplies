@@ -267,7 +267,7 @@ const AdminCustomersPage = () => {
         if (sortConfig.key !== column) return <i className="fas fa-sort text-gray-400 text-xs ml-1"></i>;
         return (
             <i
-                className={`fas fa-sort-${sortConfig.order === 'asc' ? 'up' : 'down'} text-blue-600 text-xs ml-1`}
+                className={`fas fa-sort-${sortConfig.order === 'asc' ? 'up' : 'down'} text-[var(--color-accent-primary)] text-xs ml-1`}
             ></i>
         );
     };
@@ -276,7 +276,7 @@ const AdminCustomersPage = () => {
         return (
             <AdminLayout activeTab="customers">
                 <div className="flex flex-col justify-center items-center min-h-screen bg-gray-50">
-                    <i className="fas fa-spinner text-4xl animate-spin text-blue-600 mb-4"></i>
+                    <i className="fas fa-spinner text-4xl animate-spin text-[var(--color-accent-primary)] mb-4"></i>
                     <p className="text-gray-600 text-center">
                         Loading customers...
                         <br />
@@ -324,7 +324,7 @@ const AdminCustomersPage = () => {
                         </div>
                         <div className="bg-white rounded-lg shadow p-6">
                             <p className="text-gray-600 text-sm font-semibold">Newsletter Subscribers</p>
-                            <p className="text-3xl font-bold text-blue-600 mt-2">
+                            <p className="text-3xl font-bold text-[var(--color-accent-primary)] mt-2">
                                 {customers.filter(c => c.isNewsletterSubscribed).length}
                             </p>
                         </div>
@@ -344,7 +344,7 @@ const AdminCustomersPage = () => {
                                             <th className="px-6 py-4 text-left">
                                                 <button
                                                     onClick={() => handleSort('name')}
-                                                    className="flex items-center font-semibold text-gray-900 hover:text-blue-600 transition"
+                                                    className="flex items-center font-semibold text-gray-900 hover:text-[var(--color-accent-primary)] transition"
                                                 >
                                                     Name <SortIcon column="name" />
                                                 </button>
@@ -352,7 +352,7 @@ const AdminCustomersPage = () => {
                                             <th className="px-6 py-4 text-left">
                                                 <button
                                                     onClick={() => handleSort('email')}
-                                                    className="flex items-center font-semibold text-gray-900 hover:text-blue-600 transition"
+                                                    className="flex items-center font-semibold text-gray-900 hover:text-[var(--color-accent-primary)] transition"
                                                 >
                                                     Email <SortIcon column="email" />
                                                 </button>
@@ -360,7 +360,7 @@ const AdminCustomersPage = () => {
                                             <th className="px-6 py-4 text-left">
                                                 <button
                                                     onClick={() => handleSort('phone')}
-                                                    className="flex items-center font-semibold text-gray-900 hover:text-blue-600 transition"
+                                                    className="flex items-center font-semibold text-gray-900 hover:text-[var(--color-accent-primary)] transition"
                                                 >
                                                     Phone <SortIcon column="phone" />
                                                 </button>
@@ -368,7 +368,7 @@ const AdminCustomersPage = () => {
                                             <th className="px-6 py-4 text-left">
                                                 <button
                                                     onClick={() => handleSort('orderCount')}
-                                                    className="flex items-center font-semibold text-gray-900 hover:text-blue-600 transition"
+                                                    className="flex items-center font-semibold text-gray-900 hover:text-[var(--color-accent-primary)] transition"
                                                 >
                                                     Orders <SortIcon column="orderCount" />
                                                 </button>
@@ -376,7 +376,7 @@ const AdminCustomersPage = () => {
                                             <th className="px-6 py-4 text-left">
                                                 <button
                                                     onClick={() => handleSort('totalSpent')}
-                                                    className="flex items-center font-semibold text-gray-900 hover:text-blue-600 transition"
+                                                    className="flex items-center font-semibold text-gray-900 hover:text-[var(--color-accent-primary)] transition"
                                                 >
                                                     Total Spent <SortIcon column="totalSpent" />
                                                 </button>
@@ -416,7 +416,7 @@ const AdminCustomersPage = () => {
                                                             e.stopPropagation();
                                                             openCustomerModal(customer);
                                                         }}
-                                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold"
+                                                        className="px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold"
                                                     >
 
                                                         <i className="fa-solid fa-file"></i>
@@ -442,7 +442,7 @@ const AdminCustomersPage = () => {
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Modal Header */}
-                            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex items-center justify-between sticky top-0 z-10">
+                            <div className="bg-gradient-to-r from-[var(--color-accent-primary)] to-blue-700 text-white p-6 flex items-center justify-between sticky top-0 z-10">
                                 <div>
                                     <h2 className="text-2xl font-bold">{selectedCustomer.name}</h2>
                                     <p className="text-blue-100 mt-1">{selectedCustomer.email}</p>
@@ -464,7 +464,7 @@ const AdminCustomersPage = () => {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="bg-blue-50 rounded-lg p-4 text-center">
                                                 <p className="text-gray-600 text-sm font-semibold">Total Orders</p>
-                                                <p className="text-3xl font-bold text-blue-600 mt-2">{selectedCustomer.orderCount}</p>
+                                                <p className="text-3xl font-bold text-[var(--color-accent-primary)] mt-2">{selectedCustomer.orderCount}</p>
                                             </div>
                                             <div className="bg-green-50 rounded-lg p-4 text-center">
                                                 <p className="text-gray-600 text-sm font-semibold">Total Spent</p>
@@ -598,7 +598,7 @@ const AdminCustomersPage = () => {
 
                                     {!selectedCustomer.orders || selectedCustomer.orders.length === 0 && (
                                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-                                            <i className="fas fa-envelope text-3xl text-blue-600 mb-3"></i>
+                                            <i className="fas fa-envelope text-3xl text-[var(--color-accent-primary)] mb-3"></i>
                                             <p className="text-gray-900 font-semibold mb-2">Newsletter Subscriber</p>
                                             <p className="text-gray-600 text-sm">This customer is subscribed to the newsletter but hasn't placed any orders yet.</p>
                                         </div>
@@ -615,7 +615,7 @@ const AdminCustomersPage = () => {
                                         <div className="space-y-4">
                                             <div>
                                                 <p className="text-xs text-gray-600 mb-1 font-semibold">Email</p>
-                                                <p className="text-sm text-blue-600 font-medium break-all">
+                                                <p className="text-sm text-[var(--color-accent-primary)] font-medium break-all">
                                                     {selectedCustomer.email}
                                                 </p>
                                             </div>

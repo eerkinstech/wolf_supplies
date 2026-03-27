@@ -403,7 +403,7 @@ const Inventory = () => {
                                                                                 }`}>
                                                                                 {displayValue}
                                                                             </span>
-                                                                            {isSaving && <i className="fas fa-spinner animate-spin text-xs text-blue-600"></i>}
+                                                                            {isSaving && <i className="fas fa-spinner animate-spin text-xs text-[var(--color-accent-primary)]"></i>}
                                                                             {hasChanged && !isSaving && (
                                                                                 <button
                                                                                     onClick={() => handleProductStockUpdate(product._id, displayValue)}
@@ -505,7 +505,7 @@ const Inventory = () => {
                                                                                                         : 'border-gray-300 hover:border-gray-400 focus:ring-2 focus:ring-gray-800 focus:border-transparent'
                                                                                                     }`}
                                                                                             />
-                                                                                            {isSavingPrice && <i className="fas fa-spinner animate-spin text-xs text-blue-600"></i>}
+                                                                                            {isSavingPrice && <i className="fas fa-spinner animate-spin text-xs text-[var(--color-accent-primary)]"></i>}
                                                                                             {(displayPrice !== (variant.price || 0)) && !isSavingPrice && (
                                                                                                 <button
                                                                                                     onClick={() => handleVariantPriceUpdate(product._id, index, displayPrice)}
@@ -546,7 +546,7 @@ const Inventory = () => {
                                                                                                         : 'border-gray-300 hover:border-gray-400 focus:ring-2 focus:ring-gray-800 focus:border-transparent'
                                                                                                     }`}
                                                                                             />
-                                                                                            {isSavingStock && <i className="fas fa-spinner animate-spin text-xs text-blue-600"></i>}
+                                                                                            {isSavingStock && <i className="fas fa-spinner animate-spin text-xs text-[var(--color-accent-primary)]"></i>}
                                                                                             <span className={`px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap ${(parseInt(displayStock) || 0) > 0
                                                                                                 ? 'bg-green-100 text-green-800'
                                                                                                 : 'bg-red-100 text-red-800'

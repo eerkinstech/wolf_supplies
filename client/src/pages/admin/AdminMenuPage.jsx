@@ -390,7 +390,7 @@ const AdminMenuPage = () => {
                                         setEditingMenuType(menuType);
                                         setEditLabel(item.label);
                                         setEditUrl(item.url);
-                                    }} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded text-xs transition"
+                                    }} className="p-1.5 text-blue-400 hover:text-[var(--color-accent-primary)] hover:bg-blue-50 rounded text-xs transition"
                                         title="Edit">
                                         <i className="fas fa-edit"></i>
                                     </button>
@@ -422,7 +422,7 @@ const AdminMenuPage = () => {
                                         menuConfig[menuType].setState(updateRecursive(menuConfig[menuType].state));
                                         toast.success('Submenu item added');
                                     }}
-                                        className="w-full mt-2 px-3 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-300 font-medium transition">
+                                        className="w-full mt-2 px-3 py-1.5 text-xs text-[var(--color-accent-primary)] hover:bg-blue-50 rounded border border-blue-300 font-medium transition">
                                         <i className="fas fa-plus mr-1"></i>Add to {item.label}
                                     </button>
                                 </div>
@@ -473,7 +473,7 @@ const AdminMenuPage = () => {
                                         setEditingMenuType(menuType);
                                         setEditLabel(item.label);
                                         setEditUrl(item.url);
-                                    }} className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded text-xs transition"
+                                    }} className="p-1.5 text-blue-400 hover:text-[var(--color-accent-primary)] hover:bg-blue-50 rounded text-xs transition"
                                         title="Edit">
                                         <i className="fas fa-edit"></i>
                                     </button>
@@ -496,7 +496,7 @@ const AdminMenuPage = () => {
         <AdminLayout>
             <div className="p-3 max-w-5xl mx-auto">
                 <div className="mb-4">
-                    <h1 className="text-2xl font-bold text-gray-900"><i className="fas fa-list mr-2 text-blue-600"></i>Menu Manager</h1>
+                    <h1 className="text-2xl font-bold text-gray-900"><i className="fas fa-list mr-2 text-[var(--color-accent-primary)]"></i>Menu Manager</h1>
                     <p className="text-xs text-gray-600 mt-1">Manage navigation and footer menus</p>
                 </div>
 
@@ -504,7 +504,7 @@ const AdminMenuPage = () => {
                     {Object.entries(menuConfig).map(([key, cfg]) => (
                         <button key={key} onClick={() => setActiveTab(key)}
                             className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${activeTab === key
-                                ? 'bg-blue-600 text-white shadow-md'
+                                ? 'bg-[var(--color-accent-primary)] text-white shadow-md'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                             <i className={`fas ${cfg.icon} mr-1`}></i>{cfg.title}
                         </button>
@@ -522,7 +522,7 @@ const AdminMenuPage = () => {
                         </div>
 
                         <div className="flex gap-1.5 flex-wrap">
-                            <button onClick={() => addMenuItem(activeTab)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg font-semibold transition">
+                            <button onClick={() => addMenuItem(activeTab)} className="px-3 py-1.5 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white text-xs rounded-lg font-semibold transition">
                                 <i className="fas fa-plus mr-1"></i>Add Item
                             </button>
                             <button onClick={() => { setSelectorType('category'); loadSelectorData('category'); setShowSelectorModal(true); }}
@@ -551,7 +551,7 @@ const AdminMenuPage = () => {
 
                 {loading && (
                     <div className="text-center py-10">
-                        <i className="fas fa-spinner fa-spin text-4xl text-blue-600 mb-2"></i>
+                        <i className="fas fa-spinner fa-spin text-4xl text-[var(--color-accent-primary)] mb-2"></i>
                         <p className="text-sm text-gray-600">Loading menus...</p>
                     </div>
                 )}
@@ -561,7 +561,7 @@ const AdminMenuPage = () => {
                     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
                             <div className="border-b border-gray-200 p-3 flex justify-between items-center">
-                                <h3 className="font-bold text-gray-900 text-sm"><i className="fas fa-pen mr-2 text-blue-600"></i>Edit Item</h3>
+                                <h3 className="font-bold text-gray-900 text-sm"><i className="fas fa-pen mr-2 text-[var(--color-accent-primary)]"></i>Edit Item</h3>
                                 <button onClick={() => setEditingItemId(null)} className="text-gray-400 hover:text-gray-600 text-lg">
                                     <i className="fas fa-times"></i>
                                 </button>
@@ -586,7 +586,7 @@ const AdminMenuPage = () => {
                                     updateMenuItem(editingMenuType, editingItemId, { label: editLabel, url: editUrl, link: editUrl });
                                     setEditingItemId(null);
                                     toast.success('Updated');
-                                }} className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg font-semibold">
+                                }} className="px-2.5 py-1 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white text-xs rounded-lg font-semibold">
                                     Save
                                 </button>
                             </div>
@@ -599,14 +599,14 @@ const AdminMenuPage = () => {
                     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-96 overflow-y-auto">
                             <div className="sticky top-0 bg-white border-b border-gray-200 p-3 flex justify-between items-center">
-                                <h3 className="font-bold text-gray-900 text-sm"><i className="fas fa-check-circle mr-2 text-blue-600"></i>Select {selectorType}s</h3>
+                                <h3 className="font-bold text-gray-900 text-sm"><i className="fas fa-check-circle mr-2 text-[var(--color-accent-primary)]"></i>Select {selectorType}s</h3>
                                 <button onClick={() => setShowSelectorModal(false)} className="text-gray-400 hover:text-gray-600">
                                     <i className="fas fa-times text-lg"></i>
                                 </button>
                             </div>
                             <div className="p-3">
                                 {selectorLoading ? (
-                                    <div className="text-center py-4"><i className="fas fa-spinner fa-spin text-2xl text-blue-600"></i></div>
+                                    <div className="text-center py-4"><i className="fas fa-spinner fa-spin text-2xl text-[var(--color-accent-primary)]"></i></div>
                                 ) : (
                                     <div className="space-y-1 max-h-64 overflow-y-auto">
                                         {selectorType === 'category' && Array.isArray(categoriesList) && (
@@ -715,7 +715,7 @@ const AdminMenuPage = () => {
                                     toast.success(`✓ Added ${itemsToAdd.length}`);
                                     setShowSelectorModal(false);
                                     setSelectedItems(new Set());
-                                }} disabled={selectedItems.size === 0} className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg font-semibold disabled:opacity-50">
+                                }} disabled={selectedItems.size === 0} className="px-2.5 py-1 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white text-xs rounded-lg font-semibold disabled:opacity-50">
                                     <i className="fas fa-plus mr-1"></i>Add ({selectedItems.size})
                                 </button>
                             </div>

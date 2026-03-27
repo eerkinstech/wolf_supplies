@@ -213,7 +213,7 @@ const FeaturedCategories = ({
     }
 
     return (
-        <section className="bg-white">
+        <section className="bg-white pb-10">
             <div className="max-w-7xl mx-auto">
                 <div className="mb-12">
                     <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4">{title}</h2>
@@ -288,13 +288,7 @@ const FeaturedCategories = ({
                         </div>                        )}                    </div>
                 )}
 
-                {filteredCategories.length < categories.length && (
-                    <div className="text-center mt-12 pt-8 border-t border-gray-200">
-                        <p className="text-gray-600 text-base font-medium">
-                            Showing {filteredCategories.length} of {categories.length} categories
-                        </p>
-                    </div>
-                )}
+ 
             </div>
         </section>
     );

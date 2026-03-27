@@ -125,7 +125,7 @@ export const Inspector: React.FC<InspectorProps>=({ selectedNodeId, onBack }) =>
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`flex-1 px-3 py-2 text-xs font-semibold transition ${activeTab===tab
-              ? 'text-blue-600 border-b-2 border-blue-600 bg-white'
+              ? 'text-[var(--color-accent-primary)] border-b-2 border-[var(--color-accent-primary)] bg-white'
               :'text-gray-600 hover:text-gray-800'
               }`}
           >
@@ -144,7 +144,7 @@ export const Inspector: React.FC<InspectorProps>=({ selectedNodeId, onBack }) =>
                 setCurrentDevice(dev);
               }}
               className={`flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium transition ${currentDevice===dev
-                ? 'bg-blue-600 text-white'
+                ? 'bg-[var(--color-accent-primary)] text-white'
                 :'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               title={dev}

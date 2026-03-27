@@ -279,7 +279,7 @@ const SliderManagement = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditSlider(slider)}
-                      className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg transition duration-300"
+                      className="flex-1 bg-blue-500 hover:bg-[var(--color-accent-primary)] text-white font-semibold px-4 py-2 rounded-lg transition duration-300"
                     >
                       <i className="fas fa-edit mr-2"></i>
                     </button>

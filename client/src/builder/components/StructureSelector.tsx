@@ -80,7 +80,7 @@ export const StructureSelector: React.FC<StructureSelectorProps> = ({ layout, on
                   </div>
                 )}
               </div>
-              <span className="text-xs font-semibold text-gray-900 text-center group-hover:text-blue-600 transition">
+              <span className="text-xs font-semibold text-gray-900 text-center group-hover:text-[var(--color-accent-primary)] transition">
                 {structure.name}
               </span>
             </button>

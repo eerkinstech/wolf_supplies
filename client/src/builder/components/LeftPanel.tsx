@@ -230,7 +230,7 @@ export const LeftPanel: React.FC<LeftPanelProps>=({
                 <button
                     onClick={() => setActiveTab('library')}
                     className={`flex-1 px-3 py-3 text-sm font-medium transition border-b-2 flex flex-col  items-center justify-center gap-2 ${activeTab==='library'
-                        ? 'text-blue-600 border-blue-600'
+                        ? 'text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]'
                         :'text-gray-600 border-transparent hover:text-gray-900'
                         }`}
                 >
@@ -240,7 +240,7 @@ export const LeftPanel: React.FC<LeftPanelProps>=({
                 <button
                     onClick={() => setActiveTab('navigator')}
                     className={`flex-1 px-3 py-3 text-sm font-medium transition border-b-2 flex flex-col items-center justify-center gap-2 ${activeTab==='navigator'
-                        ? 'text-blue-600 border-blue-600'
+                        ? 'text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]'
                         :'text-gray-600 border-transparent hover:text-gray-900'
                         }`}
                 >
@@ -250,7 +250,7 @@ export const LeftPanel: React.FC<LeftPanelProps>=({
                 <button
                     onClick={() => setActiveTab('inspector')}
                     className={`flex-1 px-3 py-3 text-sm font-medium transition border-b-2 flex flex-col items-center justify-center gap-2 ${activeTab==='inspector'
-                        ? 'text-blue-600 border-blue-600'
+                        ? 'text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]'
                         :'text-gray-600 border-transparent hover:text-gray-900'
                         }`}
                 >
@@ -268,7 +268,7 @@ export const LeftPanel: React.FC<LeftPanelProps>=({
                         <button
 
                             onClick={handleAddSection}
-                            className="w-full mb-4 px-4 py-3 bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-md"
+                            className="w-full mb-4 px-4 py-3 bg-linear-to-r from-[var(--color-accent-primary)] to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-md"
                         >
                             <i className="fas fa-plus"></i>
                             <span>Add Section</span>
@@ -299,7 +299,7 @@ export const LeftPanel: React.FC<LeftPanelProps>=({
                                                 }}
                                                 className="flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white border border-gray-200 hover:border-blue-400 hover:bg-blue-50 rounded text-sm transition cursor-move"
                                             >
-                                                <i className={`text-xl text-blue-600 ${getWidgetIconComponent(widget.icon)}`}></i>
+                                                <i className={`text-xl text-[var(--color-accent-primary)] ${getWidgetIconComponent(widget.icon)}`}></i>
                                                 <span className="font-medium text-gray-700 text-center">{widget.name}</span>
                                             </button>
                                         ))}
@@ -383,7 +383,7 @@ export const LeftPanel: React.FC<LeftPanelProps>=({
                                                 key={tab}
                                                 onClick={() => setInspectorTab(tab)}
                                                 className={`px-2 py-2 text-xs font-medium border-b-2 transition ${inspectorTab===tab
-                                                    ? 'text-blue-600 border-blue-600'
+                                                    ? 'text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]'
                                                     :'text-gray-600 border-transparent hover:text-gray-900'
                                                     }`}
                                             >

@@ -269,7 +269,7 @@ const OrderManagement = () => {
             <button
               onClick={() => setFilterTab('delivered')}
               className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition ${filterTab === 'delivered'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-[var(--color-accent-primary)] text-white'
                 : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                 }`}
             >

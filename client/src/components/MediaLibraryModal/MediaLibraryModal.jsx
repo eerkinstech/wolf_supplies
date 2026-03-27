@@ -236,7 +236,7 @@ const MediaLibraryModal = ({
             </div>
 
             {/* Upload Button */}
-            <label className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition cursor-pointer shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50">
+            <label className="px-4 py-2.5 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white rounded-lg font-medium transition cursor-pointer shadow-md hover:shadow-lg flex items-center gap-2 disabled:opacity-50">
               <i className="fas fa-cloud-upload-alt"></i>
               <span>Upload</span>
               <input
@@ -260,7 +260,7 @@ const MediaLibraryModal = ({
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
                 <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-blue-100">
-                  <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                  <div className="w-12 h-12 border-4 border-blue-200 border-t-[var(--color-accent-primary)] rounded-full animate-spin"></div>
                 </div>
                 <p className="text-gray-600 font-medium">Loading media library...</p>
               </div>

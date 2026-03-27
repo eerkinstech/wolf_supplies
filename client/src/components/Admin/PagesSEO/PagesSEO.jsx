@@ -343,7 +343,7 @@ const PagesSEO = () => {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50"
+                                        className="flex-1 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50"
                                     >
                                         {loading ? 'Saving...' : 'Update Metadata'}
                                     </button>
@@ -419,7 +419,7 @@ const PagesSEO = () => {
                                                 <td className="px-6 py-4 text-center">
                                                     <button
                                                         onClick={() => handleEditPage(page)}
-                                                        className="text-blue-600 hover:text-blue-800 transition mr-3"
+                                                        className="text-[var(--color-accent-primary)] hover:text-blue-800 transition mr-3"
                                                         title="Edit SEO metadata"
                                                     >
                                                         <i className="fas fa-edit"></i>
@@ -517,7 +517,7 @@ const PagesSEO = () => {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50"
+                                        className="flex-1 bg-[var(--color-accent-primary)] hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50"
                                     >
                                         {loading ? 'Saving...' : 'Update Metadata'}
                                     </button>
@@ -593,7 +593,7 @@ const PagesSEO = () => {
                                                 <td className="px-6 py-4 text-center">
                                                     <button
                                                         onClick={() => handleEditPolicy(policy)}
-                                                        className="text-blue-600 hover:text-blue-800 transition"
+                                                        className="text-[var(--color-accent-primary)] hover:text-blue-800 transition"
                                                         title="Edit SEO metadata"
                                                     >
                                                         <i className="fas fa-edit"></i>
