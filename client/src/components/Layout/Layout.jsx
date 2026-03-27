@@ -12,7 +12,7 @@ const Layout = ({ children, showMenuSlider = false }) => {
     const navigate = useNavigate();
     const [browseMenu, setBrowseMenu] = useState([]);
     const [mainNavMenu, setMainNavMenu] = useState([]);
-    const [activeMenuPath, setActiveMenuPath] = useState([0]); // Track path for progressive menu
+    const [activeMenuPath, setActiveMenuPath] = useState([]); // Track path for progressive menu
     const [browseOpen, setBrowseOpen] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [slides, setSlides] = useState([]);
@@ -118,6 +118,28 @@ const Layout = ({ children, showMenuSlider = false }) => {
         );
     };
 
+    const getActiveSubmenuItems = (items, currentPath) => {
+        let currentLevel = items;
+        let nextLevel = [];
+
+        for (let depth = 0; depth < currentPath.length; depth++) {
+            const itemIndex = currentPath[depth];
+            if (itemIndex == null || itemIndex < 0 || itemIndex >= currentLevel.length) {
+                break;
+            }
+
+            const currentItem = currentLevel[itemIndex];
+            nextLevel = (currentItem?.submenu || currentItem?.sub) || [];
+            if (nextLevel.length === 0) {
+                break;
+            }
+
+            currentLevel = nextLevel;
+        }
+
+        return nextLevel;
+    };
+
     if (!showMenuSlider) {
         return (
             <>
@@ -130,25 +152,31 @@ const Layout = ({ children, showMenuSlider = false }) => {
     return (
         <div className="w-full bg-[var(--color-bg-primary)] pb-10 md:pb-0">
             {/* Top Navigation Bar */}
-            <div className="w-full hidden md:block bg-[var(--color-bg-primary)] border-b border-[var(--color-border-light)] sticky top-0 z-30">
-                <div className="flex items-center gap-4 px-4 py-2 overflow-x-auto">
+            <div className="w-full hidden md:block bg-[var(--color-bg-primary)] sticky top-0 z-30">
+                <div className="flex items-center gap-0 px-4 overflow-x-auto border-y border-[var(--color-border-light)]">
                     {/* Browse Categories Button */}
                     <button
-                        className="flex items-center gap-2 text-black hover:opacity-90 transition duration-300 font-bold text-lg whitespace-nowrap min-w-fit"
+                        className="group flex items-center gap-2 text-black hover:bg-[var(--color-accent-primary)] hover:text-white transition duration-300 font-bold text-lg whitespace-nowrap w-[268px] px-6 py-3"
                     >
-                        <i className="fas fa-burger" style={{ marginRight: '0.5rem' }}></i> Shop By Category
+                        <i
+                            className="fas fa-burger text-black transition-colors duration-300 group-hover:text-white"
+                            style={{ marginRight: '0.5rem' }}
+                        ></i>
+                        <span className="text-black transition-colors duration-300 group-hover:text-white">
+                            Shop By Category
+                        </span>
                     </button>
 
                     {/* Vertical Divider */}
-                    <div className="h-6 w-px bg-[var(--color-border-light)] mx-2"></div>
+                    <div className="h-10 w-[4px] bg-[var(--color-border-light)] flex-shrink-0"></div>
 
                     {/* Main Navigation - Dynamic from mainNavMenu */}
                     {mainNavMenu.length > 0 ? (
-                        mainNavMenu.map((item) => (
+                        mainNavMenu.map((item, index) => (
                             <Link
                                 key={item.id || item.name}
                                 to={item.url || item.link || '#'}
-                                className="px-4 py-2 hover:text-[var(--color-accent-primary)] font-semibold text-[var(--color-text-light)] whitespace-nowrap"
+                                className={`px-8 py-2 hover:text-[var(--color-accent-primary)] font-semibold text-[var(--color-text-light)] whitespace-nowrap ${index > 0 ? 'border-l border-[var(--color-border-light)]' : ''}`}
                             >
                                 {item.label || item.name}
                             </Link>
@@ -173,7 +201,7 @@ const Layout = ({ children, showMenuSlider = false }) => {
             </div>
 
             {/* Main Content Area with Progressive Menu and Right Slider */}
-            <div className="w-full bg-white relative" onMouseLeave={() => { setBrowseOpen(false); setActiveMenuPath([0]); }}>
+            <div className="w-full bg-white relative" onMouseLeave={() => { setBrowseOpen(false); setActiveMenuPath([]); }}>
                 <div className="flex w-full h-auto">
                     {/* Left Sidebar - Menu Mega Panel */}
                     <div className="hidden md:flex md:flex-col w-72 border-r-4 border-[var(--color-border-light)] bg-[var(--color-bg-primary)] shadow-lg relative">
@@ -192,15 +220,18 @@ const Layout = ({ children, showMenuSlider = false }) => {
                                             setActiveMenuPath([idx]);
                                             setBrowseOpen(hasSubmenu);
                                         }}
-                                        onClick={() => { setBrowseOpen(false); setActiveMenuPath([0]); }}
+                                        onClick={() => { setBrowseOpen(false); setActiveMenuPath([]); }}
                                         className={`w-full text-left px-6 py-4 border-b border-[var(--color-border-light)] transition duration-150 font-semibold text-base flex items-center justify-between no-underline ${activeMenuPath[0] === idx
                                             ? 'bg-white text-[var(--color-accent-primary)]'
-                                            : 'bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] hover:bg-white hover:text-[var(--color-accent-primary)]'
-                                            }`}
-                                    >
+                                            : 'bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]'
+                                              }`}
+                                      >
                                         <span>{item.label || item.name || 'Menu Item'}</span>
                                         {hasSubmenu && (
-                                            <i className="fas fa-chevron-down" style={{ fontSize: 'inherit', color: 'var(--color-text-light)' }}></i>
+                                            <i
+                                                className={`fas fa-chevron-down transition-transform duration-200 ${activeMenuPath[0] === idx ? 'rotate-270' : ''}`}
+                                                style={{ fontSize: 'inherit', color: 'var(--color-text-light)' }}
+                                            ></i>
                                         )}
                                     </Link>
                                 );
@@ -210,8 +241,8 @@ const Layout = ({ children, showMenuSlider = false }) => {
                         {/* Submenu Columns - Progressive Reveal - Absolute Positioned Above Slider */}
                         {browseOpen && (
                             <div
-                                className="absolute left-72 top-0 z-50 bg-white overflow-x-auto flex h-96 border border-[var(--color-border-light)] shadow-2xl"
-                                style={{ width: 'calc(100vw - 310px)' }}
+                                className="absolute left-72 top-0 z-50 bg-white overflow-hidden h-96 border border-[var(--color-border-light)] shadow-2xl"
+                                style={{ width: 'calc(100vw - 288px)' }}
                                 onMouseEnter={() => {
                                     if (browseMenuTimeoutRef.current) clearTimeout(browseMenuTimeoutRef.current);
                                     setBrowseOpen(true);
@@ -219,93 +250,47 @@ const Layout = ({ children, showMenuSlider = false }) => {
                                 onMouseLeave={() => {
                                     browseMenuTimeoutRef.current = setTimeout(() => {
                                         setBrowseOpen(false);
-                                        setActiveMenuPath([0]);
+                                        setActiveMenuPath([]);
                                     }, 150);
                                 }}
                             >
-                                {/* Dynamic Columns for Nested Menus */}
                                 {(() => {
-                                    const columns = [];
-                                    let currentLevel = browseMenu;
-                                    let currentPath = [...activeMenuPath];
+                                    const activeMainItem = browseMenu[activeMenuPath[0]];
+                                    const activeSubmenuItems = getActiveSubmenuItems(browseMenu, activeMenuPath);
 
-                                    // Always build the first submenu column
-                                    if (currentPath.length > 0) {
-                                        const itemIndex = currentPath[0];
-                                        if (itemIndex >= 0 && itemIndex < currentLevel.length) {
-                                            const currentItem = currentLevel[itemIndex];
-                                            const nextLevel = (currentItem?.submenu || currentItem?.sub) || [];
-
-                                            if (nextLevel.length > 0) {
-                                                columns.push(
-                                                    <div key="col_1" className="w-56 bg-white border-r border-[var(--color-border-light)] overflow-y-auto p-0 flex flex-col flex-shrink-0">
-                                                        {nextLevel.map((item, idx) => {
-                                                            const hasSubmenu = (item.submenu && item.submenu.length > 0) || (item.sub && item.sub.length > 0);
-                                                            const isActive = idx === currentPath[1];
-                                                            return (
-                                                                <Link
-                                                                    key={item.id || `sub_${idx}`}
-                                                                    to={item.url || item.link || '#'}
-                                                                    onClick={() => { setBrowseOpen(false); setActiveMenuPath([0]); }}
-                                                                    onMouseEnter={() => setActiveMenuPath([currentPath[0], idx])}
-                                                                    className={`w-full text-left px-6 py-4 border-b border-[var(--color-border-light)] transition duration-150 font-semibold text-base flex items-center justify-between no-underline ${isActive
-                                                                        ? 'bg-[var(--color-bg-section)] text-[var(--color-accent-primary)]'
-                                                                        : 'bg-white text-[var(--color-text-primary)] hover:bg-[var(--color-bg-section)] hover:text-[var(--color-accent-primary)]'
-                                                                        }`}
-                                                                >
-                                                                    <span>{item.label || item.name}</span>
-                                                                    {hasSubmenu && (
-                                                                        <i className="fas fa-chevron-down text-xs" style={{ color: 'var(--color-text-light)' }}></i>
-                                                                    )}
-                                                                </Link>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                );
-                                                currentLevel = nextLevel;
-                                            }
-                                        }
-                                    }
-
-                                    // Build additional columns for deeper nesting
-                                    for (let depth = 1; depth < currentPath.length && currentLevel && currentLevel.length > 0; depth++) {
-                                        const itemIndex = currentPath[depth];
-                                        if (itemIndex >= 0 && itemIndex < currentLevel.length) {
-                                            const currentItem = currentLevel[itemIndex];
-                                            const nextLevel = (currentItem?.submenu || currentItem?.sub) || [];
-
-                                            if (nextLevel.length > 0) {
-                                                columns.push(
-                                                    <div key={`col_${depth + 1}`} className="w-56 bg-white border-r border-[var(--color-border-light)] overflow-y-auto p-0 flex flex-col flex-shrink-0">
-                                                        {nextLevel.map((item, idx) => {
-                                                            const hasSubmenu = (item.submenu && item.submenu.length > 0) || (item.sub && item.sub.length > 0);
-                                                            const isActive = idx === currentPath[depth + 1];
-                                                            return (
-                                                                <Link
-                                                                    key={item.id || `item_${depth}_${idx}`}
-                                                                    to={item.url || item.link || '#'}
-                                                                    onClick={() => { setBrowseOpen(false); setActiveMenuPath([0]); }}
-                                                                    onMouseEnter={() => setActiveMenuPath([...currentPath.slice(0, depth + 1), idx])}
-                                                                    className={`w-full text-left px-6 py-4 border-b border-[var(--color-border-light)] transition duration-150 font-semibold text-base flex items-center justify-between no-underline ${isActive
-                                                                        ? 'bg-[var(--color-bg-section)] text-[var(--color-accent-primary)]'
-                                                                        : 'bg-white text-[var(--color-text-primary)] hover:bg-[var(--color-bg-section)] hover:text-[var(--color-accent-primary)]'
-                                                                        }`}
-                                                                >
-                                                                    <span>{item.label || item.name}</span>
-                                                                    {hasSubmenu && (
-                                                                        <i className="fas fa-chevron-down text-xs" style={{ color: 'var(--color-text-light)' }}></i>
-                                                                    )}
-                                                                </Link>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                );
-                                                currentLevel = nextLevel;
-                                            }
-                                        }
-                                    }
-
-                                    return columns;
+                                    return (
+                                        <div className="bg-white h-full flex flex-col">
+                                            <div className="px-8 py-5 border-b border-[var(--color-border-light)]">
+                                                <h3 className="text-2xl font-bold text-[var(--color-text-primary)]">
+                                                    {activeMainItem?.label || activeMainItem?.name || 'Category'}
+                                                </h3>
+                                            </div>
+                                            {activeSubmenuItems.length > 0 ? (
+                                                <div className="flex-1 overflow-hidden px-8 py-6 [column-count:4] [column-gap:3rem] [column-fill:auto]">
+                                                    {activeSubmenuItems.map((item, idx) => {
+                                                        const hasSubmenu = (item.submenu && item.submenu.length > 0) || (item.sub && item.sub.length > 0);
+                                                        return (
+                                                            <Link
+                                                                key={item.id || `submenu_${idx}`}
+                                                                to={item.url || item.link || '#'}
+                                                                onClick={() => { setBrowseOpen(false); setActiveMenuPath([]); }}
+                                                                onMouseEnter={() => {
+                                                                    if (hasSubmenu) {
+                                                                        setActiveMenuPath([...activeMenuPath, idx]);
+                                                                    }
+                                                                }}
+                                                                className="block mb-5 break-inside-avoid text-[var(--color-text-light)] hover:text-[var(--color-accent-primary)] transition duration-150 text-base leading-snug no-underline"
+                                                            >
+                                                                {item.label || item.name}
+                                                            </Link>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="px-8 py-6 text-[var(--color-text-light)]">No subcategories</div>
+                                            )}
+                                        </div>
+                                    );
                                 })()}
                             </div>
                         )}
