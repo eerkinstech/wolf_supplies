@@ -98,8 +98,8 @@ const CategoriesPage = () => {
           {/* Content */}
           {isLoadingCategories ? (
             <div className="flex justify-center items-center h-96">
-              <div className="text-center">
-                <i className="fas fa-spinner animate-spin" style={{ fontSize: '64px', color: 'var(--color-text-light)', display: 'block', marginBottom: '16px' }}></i>
+              <div className="text-center flex-col flex justify-center items-center">
+                <i className="fas fa-spinner text-center animate-spin" style={{ fontSize: '64px', color: 'var(--color-text-light)', display: 'block', marginBottom: '16px' }}></i>
                 <p className="text-xl text-[var(--color-text-light)]">Loading categories...</p>
               </div>
             </div>

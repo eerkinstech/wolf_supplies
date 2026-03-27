@@ -72,7 +72,13 @@ def _build_tree(docs: List[Dict]) -> List[Dict]:
 def _count_products_for_category(cat_id: str) -> int:
     try:
         coll = db.get_collection("products")
-        return coll.count_documents({"categories": ObjectId(cat_id)})
+        category_refs = [cat_id]
+        try:
+            category_refs.append(ObjectId(cat_id))
+        except Exception:
+            pass
+
+        return coll.count_documents({"categories": {"$in": category_refs}})
     except Exception:
         return 0
 
@@ -95,7 +101,9 @@ async def get_categories(all_categories: bool = False):
         # Annotate product_count recursively
         def _annotate(nodes: List[Dict]):
             for node in nodes:
-                node["product_count"] = _count_products_for_category(node["_id"]) or 0
+                count = _count_products_for_category(node["_id"]) or 0
+                node["product_count"] = count
+                node["productCount"] = count
                 if node.get("subcategories"):
                     _annotate(node["subcategories"])
 

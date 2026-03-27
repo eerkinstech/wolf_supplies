@@ -563,7 +563,7 @@ const CategoryManagement = () => {
         const initializeExpandedState = (items) => {
             return (items || []).map(item => ({
                 ...item,
-                productCount: item.productCount || 0, // Explicitly preserve productCount
+                productCount: item.productCount ?? item.product_count ?? 0,
                 expandedSubcategories: categoryToExpand === item._id ? true : false,
                 subcategories: initializeExpandedState(item.subcategories),
             }));
@@ -571,7 +571,7 @@ const CategoryManagement = () => {
 
         setCategories(reduxCategories.map(cat => ({
             ...cat,
-            productCount: cat.productCount || 0, // Explicitly preserve productCount
+            productCount: cat.productCount ?? cat.product_count ?? 0,
             expandedSubcategories: categoryToExpand === cat._id ? true : false,
             subcategories: initializeExpandedState(cat.subcategories),
         })) || []);

@@ -259,7 +259,7 @@ const ProductsPage = () => {
             <div className="lg:col-span-4 space-y-8">
               {isLoadingProducts ? (
                 <div className="flex justify-center items-center h-96">
-                  <div className="text-center">
+                  <div className="text-center flex justify-center items-center flex-col">
                     <i className="fas fa-spinner animate-spin" style={{ fontSize: '64px', color: 'var(--color-text-light)', display: 'block', marginBottom: '16px' }}></i>
                     <p className="text-xl text-[var(--color-text-light)]">Loading products...</p>
                   </div>

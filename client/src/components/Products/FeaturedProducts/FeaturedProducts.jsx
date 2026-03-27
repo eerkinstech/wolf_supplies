@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchProducts } from '../../../redux/slices/productSlice';
+import { fetchCategories } from '../../../redux/slices/categorySlice';
 import ProductCard from '../ProductCard/ProductCard';
 
 
@@ -38,8 +39,22 @@ const FeaturedProducts = ({
     const [currentIndex, setCurrentIndex] = useState(0);
     const [screenSize, setScreenSize] = useState('lg');
     const { products, loading } = useSelector((state) => state.product);
+    const { categories } = useSelector((state) => state.category);
     // Normalize `products` to an array in case the API returned an object { products: [...] }
     const normalizedProducts = Array.isArray(products) ? products : (products && products.products) || [];
+
+    const flattenCategories = (items = []) => {
+        let result = [];
+        for (const item of items) {
+            result.push(item);
+            if (Array.isArray(item?.subcategories) && item.subcategories.length > 0) {
+                result = result.concat(flattenCategories(item.subcategories));
+            }
+        }
+        return result;
+    };
+
+    const normalizedCategories = flattenCategories(Array.isArray(categories) ? categories : []);
 
     // Map spacing values to Tailwind classes
     const getSpacingClass = (spacingValue) => {
@@ -125,7 +140,10 @@ const FeaturedProducts = ({
         if (!Array.isArray(products) || products.length === 0) {
             dispatch(fetchProducts());
         }
-    }, [dispatch, products]);
+        if (!Array.isArray(categories) || categories.length === 0) {
+            dispatch(fetchCategories());
+        }
+    }, [dispatch, products, categories]);
 
     useEffect(() => {
         // Filter products by category - no limit applied here
@@ -135,17 +153,43 @@ const FeaturedProducts = ({
 
             // Filter by category if provided
             if (category && category.trim()) {
+                const normalizedTarget = category.trim().toLowerCase();
+                const matchedCategory = normalizedCategories.find((cat) => {
+                    const values = [cat?._id, cat?.id, cat?.name, cat?.slug]
+                        .filter(Boolean)
+                        .map((value) => String(value).trim().toLowerCase());
+                    return values.includes(normalizedTarget);
+                });
+
+                const acceptedValues = new Set([normalizedTarget]);
+                if (matchedCategory) {
+                    [matchedCategory._id, matchedCategory.id, matchedCategory.name, matchedCategory.slug]
+                        .filter(Boolean)
+                        .forEach((value) => acceptedValues.add(String(value).trim().toLowerCase()));
+                }
+
                 filtered = filtered.filter((product) => {
-                    // Handle both old single category and new categories array format
-                    if (product.categories && Array.isArray(product.categories)) {
-                        return product.categories.some(
-                            (cat) =>
-                                (typeof cat === 'string' ? cat : cat.name || cat.slug)
-                                    .toLowerCase() === category.toLowerCase()
-                        );
-                    } else if (product.category) {
-                        return product.category.toLowerCase() === category.toLowerCase();
+                    if (Array.isArray(product.categories)) {
+                        return product.categories.some((cat) => {
+                            if (typeof cat === 'string') {
+                                return acceptedValues.has(cat.trim().toLowerCase());
+                            }
+
+                            if (cat && typeof cat === 'object') {
+                                const productCategoryValues = [cat._id, cat.id, cat.name, cat.slug]
+                                    .filter(Boolean)
+                                    .map((value) => String(value).trim().toLowerCase());
+                                return productCategoryValues.some((value) => acceptedValues.has(value));
+                            }
+
+                            return false;
+                        });
                     }
+
+                    if (product.category) {
+                        return acceptedValues.has(String(product.category).trim().toLowerCase());
+                    }
+
                     return false;
                 });
             }
@@ -161,7 +205,7 @@ const FeaturedProducts = ({
                 return prevIds === filteredIds ? prev : filtered;
             });
         }
-    }, [products, category]);
+    }, [normalizedProducts, normalizedCategories, category]);
 
     // Carousel navigation - slides by 1 item
     const handlePrevious = () => {
