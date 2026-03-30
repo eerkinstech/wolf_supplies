@@ -73,24 +73,9 @@ export default defineConfig({
     sourcemap: false,
     chunkSizeWarningLimit: 1000,
     reportCompressedSize: false,
-    // Optimized code splitting - fewer, larger chunks for better performance
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Keep vendor code separate for long-term caching
-          if (id.includes('node_modules')) {
-            if (id.includes('react')) {
-              return 'vendor-react';
-            }
-            if (id.includes('@reduxjs') || id.includes('redux')) {
-              return 'vendor-redux';
-            }
-            if (id.includes('@stripe')) {
-              return 'vendor-stripe';
-            }
-            // Group other vendors together
-            return 'vendor-other';
-          }
           // Keep admin pages separate
           if (id.includes('/admin/')) {
             return 'admin';
