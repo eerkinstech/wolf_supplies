@@ -3,6 +3,7 @@
 // (e.g. menus, sliders, featured collections).
 
 const jsonCache = new Map();
+const pendingJsonRequests = new Map();
 
 export const cachedJsonFetch = async (url, options = {}) => {
   const cacheKey = url;
@@ -20,17 +21,30 @@ export const cachedJsonFetch = async (url, options = {}) => {
     return jsonCache.get(cacheKey);
   }
 
-  const res = await fetch(url, options);
-  if (!res.ok) {
-    throw new Error(`Request failed with status ${res.status}`);
+  if (pendingJsonRequests.has(cacheKey)) {
+    return pendingJsonRequests.get(cacheKey);
   }
-  const contentType = res.headers.get('content-type') || '';
-  if (!contentType.includes('application/json')) {
-    const text = await res.text();
-    throw new Error(`Expected JSON response but received: ${text.slice(0,200)}`);
-  }
-  const data = await res.json();
-  jsonCache.set(cacheKey, data);
-  return data;
+
+  const requestPromise = (async () => {
+    const res = await fetch(url, options);
+    if (!res.ok) {
+      throw new Error(`Request failed with status ${res.status}`);
+    }
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await res.text();
+      throw new Error(`Expected JSON response but received: ${text.slice(0,200)}`);
+    }
+    const data = await res.json();
+    jsonCache.set(cacheKey, data);
+    pendingJsonRequests.delete(cacheKey);
+    return data;
+  })().catch((error) => {
+    pendingJsonRequests.delete(cacheKey);
+    throw error;
+  });
+
+  pendingJsonRequests.set(cacheKey, requestPromise);
+  return requestPromise;
 };
 

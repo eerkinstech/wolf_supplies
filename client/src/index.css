@@ -1,6 +1,8 @@
-/* FontAwesome - Using CDN with critical icons inlined, rest loaded on demand */
+/* Font Awesome base styles */
 @import "@fortawesome/fontawesome-free/css/fontawesome.min.css";
+@import "@fortawesome/fontawesome-free/css/regular.min.css";
 @import "@fortawesome/fontawesome-free/css/solid.min.css";
+@import "@fortawesome/fontawesome-free/css/brands.min.css";
 
 /* Tailwind CSS v4 */
 @import "tailwindcss";

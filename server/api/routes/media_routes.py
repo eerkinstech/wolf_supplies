@@ -146,7 +146,13 @@ async def serve_media(filename: str):
         if not os.path.realpath(file_path).startswith(os.path.realpath(uploads_dir)):
             raise HTTPException(status_code=404, detail="File not found")
 
-        return FileResponse(file_path)
+        return FileResponse(
+            file_path,
+            headers={
+                "Cache-Control": "public, max-age=31536000, immutable",
+                "Vary": "Accept-Encoding",
+            },
+        )
     except HTTPException:
         raise
     except Exception as e:

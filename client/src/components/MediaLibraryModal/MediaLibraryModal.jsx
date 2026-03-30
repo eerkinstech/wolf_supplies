@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -286,7 +284,7 @@ const MediaLibraryModal = ({
                       src={asset.previewUrl}
                       alt={asset.filename}
                       className="w-full h-full object-cover group-hover:scale-105 transition"
-                      onError={(e) => (e.target.src = '/placeholder.png')}
+                      onError={(e) => (e.target.src = '/placeholder.webp')}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200">

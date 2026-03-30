@@ -1,34 +1,12 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { cachedJsonFetch } from '@/utils/apiCache';
-import icons from '../../assets/Strip Logos.png';
+import { useMenus } from '@/hooks/useMenus';
+import icons from '../../assets/Strip Logos.webp';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
-  const [footerMenu, setFooterMenu] = useState([]);
-  const [policiesMenu, setPoliciesMenu] = useState([]);
-
-  // Load footer and policies menus from server (cached per session)
-  useEffect(() => {
-    const loadMenus = async () => {
-      try {
-        const API = import.meta.env.VITE_API_URL || '';
-        const url = API ? `${API}/api/settings/menus` : '/api/settings/menus';
-        const data = await cachedJsonFetch(url);
-        if (data.footerMenu && Array.isArray(data.footerMenu)) {
-          setFooterMenu(data.footerMenu);
-        }
-        if (data.policiesMenu && Array.isArray(data.policiesMenu)) {
-          setPoliciesMenu(data.policiesMenu);
-        }
-      } catch (err) {
-      }
-    };
-    loadMenus();
-  }, []);
+  const { footerMenu = [], policiesMenu = [] } = useMenus();
 
   return (
     <>
@@ -39,7 +17,7 @@ const Footer = () => {
             {/* Company Info */}
             <div>
               <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <img src="/Wolf Supplies LTD.png" alt="Wolf Supplies" className="h-auto w-auto object-cover" />
+                <img src="/Wolf Supplies LTD.webp" alt="Wolf Supplies" width="500" height="200" loading="lazy" decoding="async" className="h-auto w-auto object-cover" />
               </h3>
               <p className="text-[var(--color-text-light)] mb-4">Wolf Supplies a company registered in the United Kingdom. Your trusted UK online shopping destination for quality products at competitive prices.</p>
               <p className="text-[var(--color-text-primary)] text-sm mb-2"><strong>Company Number:</strong> <a href="https://find-and-update.company-information.service.gov.uk/company/16070029" target="_blank" rel="noopener noreferrer" className="text-[var(--color-text-light)] hover:text-[var(--color-accent-primary)]">16070029</a></p>
@@ -167,10 +145,10 @@ const Footer = () => {
           <div className="border-t border-gray-300 py-8 mb-8">
             <h4 className="text-lg font-bold mb-6 text-center">We Accept</h4>
             <div className="flex justify-center mb-8">
-              <img src={icons} alt="Payment Methods" className="h-10 object-contain" />
+              <img src={icons} alt="Payment Methods" width="887" height="100" loading="lazy" decoding="async" className="h-10 w-auto object-contain" />
             </div>
             <div className="text-center">
-              <Link to='/payment-options' className="text-[var(--color-accent-primary)] hover:text-[var(--color-accent-light)] transition duration-300 text-sm font-semibold">
+              <Link to='/payment-options' className="text-[var(--color-text-primary)] underline underline-offset-4 hover:text-[var(--color-accent-primary)] transition duration-300 text-sm font-semibold">
                 View All Payment Options
               </Link>
             </div>

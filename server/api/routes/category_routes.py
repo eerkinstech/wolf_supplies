@@ -7,6 +7,7 @@ from controllers.category_controller import (
     delete_category
 )
 from middleware.auth_middleware import protect, admin
+from utils.caching import cached_endpoint
 
 router = APIRouter()
 
@@ -31,6 +32,7 @@ def check_category_permission(user: dict):
     return False
 
 @router.get("/")
+@cached_endpoint(ttl=1800, key_prefix="categories")
 async def fetch_categories():
     return await get_categories()
 

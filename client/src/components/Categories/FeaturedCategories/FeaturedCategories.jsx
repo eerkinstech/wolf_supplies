@@ -1,9 +1,7 @@
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchCategories } from '../../../redux/slices/categorySlice';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import CategoryCard from '../CategoryCard/CategoryCard';
+import { cachedJsonFetch } from '../../../utils/apiCache';
+import { getApiUrl } from '../../../utils/envHelper';
 
 
 const FeaturedCategories = ({
@@ -32,11 +30,10 @@ const FeaturedCategories = ({
         titleFontSize = editorContent.titleFontSize || titleFontSize;
         descFontSize = editorContent.descFontSize || descFontSize;
     }
-    const dispatch = useDispatch();
-    const [filteredCategories, setFilteredCategories] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [screenSize, setScreenSize] = useState('lg');
-    const { categories, loading } = useSelector((state) => state.category);
+    const [localCategories, setLocalCategories] = useState([]); // Store categories locally for this component
+    const [loading, setLoading] = useState(true); // Local loading state
 
     // Determine items per slide based on screen size (responsive)
     const getItemsPerSlide = () => {
@@ -46,9 +43,6 @@ const FeaturedCategories = ({
     };
 
     const ITEMS_PER_SLIDE = getItemsPerSlide();
-
-    // Determine if carousel should show (when items exceed visible columns)
-    const shouldShowCarousel = filteredCategories.length > ITEMS_PER_SLIDE;
 
     // Map spacing values to Tailwind classes
     const getSpacingClass = (spacingValue) => {
@@ -110,14 +104,29 @@ const FeaturedCategories = ({
     }, []);
 
     useEffect(() => {
-        // Recursively flatten all categories from all hierarchy levels
+        const fetchAndCache = async () => {
+            try {
+                setLoading(true);
+                const data = await cachedJsonFetch(`${getApiUrl()}/api/categories`);
+                setLocalCategories(Array.isArray(data) ? data : (data?.categories || []));
+            } catch (error) {
+                console.error('Failed to fetch categories:', error);
+                setLocalCategories([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAndCache();
+    }, []);
+
+    const flattenedCategories = useMemo(() => {
         const flattenCategories = (cats) => {
             let result = [];
             if (!cats || !Array.isArray(cats)) return result;
 
             for (const cat of cats) {
                 result.push(cat);
-                // Recursively add subcategories at all levels
                 if (cat.subcategories && Array.isArray(cat.subcategories)) {
                     result = result.concat(flattenCategories(cat.subcategories));
                 }
@@ -125,9 +134,8 @@ const FeaturedCategories = ({
             return result;
         };
 
-        // Filter categories by names and apply limit only for carousel mode
-        if (categories && categories.length > 0) {
-            let filtered = flattenCategories(categories);
+        if (localCategories && localCategories.length > 0) {
+            let filtered = flattenCategories(localCategories);
 
             // Filter by category names if provided
             if (categoryNames && categoryNames.length > 0) {
@@ -139,22 +147,22 @@ const FeaturedCategories = ({
                     )
                 );
             } else if (showAllIfEmpty) {
-                // Show all categories if no specific names provided and showAllIfEmpty is true
-                filtered = flattenCategories(categories);
+                filtered = flattenCategories(localCategories);
             }
 
-            // Only update state if filtered categories actually changed
-            setFilteredCategories((prev) => {
-                // Check if arrays are different before updating
-                if (prev.length !== filtered.length) return filtered;
-                if (prev.length === 0) return filtered;
-                // Quick check if it's the same data
-                const prevIds = prev.map(c => c.id || c._id).join(',');
-                const filteredIds = filtered.map(c => c.id || c._id).join(',');
-                return prevIds === filteredIds ? prev : filtered;
-            });
+            return filtered;
         }
-    }, [categories, categoryNames, showAllIfEmpty]);
+        return [];
+    }, [localCategories, categoryNames, showAllIfEmpty]);
+
+    const filteredCategories = flattenedCategories;
+
+    // Determine if carousel should show (when items exceed visible columns)
+    const shouldShowCarousel = filteredCategories.length > ITEMS_PER_SLIDE;
+
+    useEffect(() => {
+        setCurrentIndex((prev) => Math.min(prev, Math.max(0, filteredCategories.length - ITEMS_PER_SLIDE)));
+    }, [filteredCategories.length, ITEMS_PER_SLIDE]);
 
     // Carousel navigation - slides by 1 item
     const handlePrevious = () => {
@@ -167,7 +175,7 @@ const FeaturedCategories = ({
         );
     };
 
-    if (loading && categories.length === 0) {
+    if (loading && localCategories.length === 0) {
         return (
             <section className="bg-white">
                 <div className="max-w-7xl mx-auto">
@@ -275,20 +283,20 @@ const FeaturedCategories = ({
 
                         {/* Carousel Indicators - Only show when carousel is active */}
                         {shouldShowCarousel && (
-                        <div className="flex justify-center items-center gap-3 mt-10">
-                            {Array.from({ length: Math.ceil(filteredCategories.length / ITEMS_PER_SLIDE) }).map((_, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => setCurrentIndex(idx * ITEMS_PER_SLIDE)}
-                                    className={`h-3 rounded-full transition-all duration-300 cursor-pointer ${Math.floor(currentIndex / ITEMS_PER_SLIDE) === idx ? 'bg-black w-10 shadow-lg' : 'bg-gray-300 w-3 hover:bg-black'
-                                        }`}
-                                    aria-label={`Go to slide ${idx + 1}`}
-                                />
-                            ))}
-                        </div>                        )}                    </div>
+                            <div className="flex justify-center items-center gap-3 mt-10">
+                                {Array.from({ length: Math.ceil(filteredCategories.length / ITEMS_PER_SLIDE) }).map((_, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setCurrentIndex(idx * ITEMS_PER_SLIDE)}
+                                        className={`h-3 rounded-full transition-all duration-300 cursor-pointer ${Math.floor(currentIndex / ITEMS_PER_SLIDE) === idx ? 'bg-black w-10 shadow-lg' : 'bg-gray-300 w-3 hover:bg-black'
+                                            }`}
+                                        aria-label={`Go to slide ${idx + 1}`}
+                                    />
+                                ))}
+                            </div>)}                    </div>
                 )}
 
- 
+
             </div>
         </section>
     );

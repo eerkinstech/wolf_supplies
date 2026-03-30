@@ -8,11 +8,7 @@ export const getApiUrl = () => {
     return import.meta.env.VITE_API_URL;
   }
 
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return window.location.origin;
-  }
-
-  return 'http://localhost:8000';
+  return 'https://wolfsupplies.co.uk';
 };
 
 export const getStripePublishableKey = () => {

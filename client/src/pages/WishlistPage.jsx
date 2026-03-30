@@ -1,5 +1,3 @@
-'use client';
-
 // Backup of existing WishlistPage.jsx
 
 import React, { useState } from 'react';

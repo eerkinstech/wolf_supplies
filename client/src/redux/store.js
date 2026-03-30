@@ -15,6 +15,21 @@ export const store = configureStore({
     wishlist: wishlistReducer,
     category: categoryReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    process.env.NODE_ENV === 'production'
+      ? getDefaultMiddleware()
+      : getDefaultMiddleware({
+          // In development mode, increase warning threshold for serialization checks
+          // This is because loading large product/category data takes time
+          // Note: This middleware is completely disabled in production builds
+          serializableStateInvariantMiddleware: {
+            warnAfter: 128, // Increase from default 32ms to 128ms
+            ignoredActions: ['persist/PERSIST'], // Ignore persist actions if using redux-persist
+          },
+          immutableStateInvariantMiddleware: {
+            warnAfter: 128,
+          },
+        }),
 });
 
 export default store;

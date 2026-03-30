@@ -10,9 +10,14 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 from fastapi import FastAPI, Request, HTTPException, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
+from starlette.middleware.base import BaseHTTPMiddleware
+
+# Import middleware
+from middleware.caching_headers_middleware import CachingHeadersMiddleware
 from dotenv import load_dotenv
 
 # Import database from our database module
@@ -898,6 +903,16 @@ app.add_middleware(
     max_age=3600,
 )
 print("[OK] CORS middleware initialized - allowing localhost:5173 with credentials")
+
+# Add GZip compression middleware (must be added after CORS for proper ordering)
+print("Initializing GZip compression middleware...")
+app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
+print("[OK] GZip compression middleware initialized")
+
+# Add caching headers middleware
+print("Initializing caching headers middleware...")
+app.add_middleware(CachingHeadersMiddleware)
+print("[OK] Caching headers middleware initialized")
 
 # =============================================================================
 # EXCEPTION HANDLERS (MUST be before routes!)

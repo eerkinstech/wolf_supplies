@@ -1,10 +1,9 @@
 import Header from '../Header/Header';
-'use client';
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from "react-router-dom";
 import { Link } from 'react-router-dom';
 import { cachedJsonFetch } from '@/utils/apiCache';
+import { getApiUrl } from '@/utils/envHelper';
 
 
 
@@ -17,6 +16,7 @@ const Layout = ({ children, showMenuSlider = false }) => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [slides, setSlides] = useState([]);
     const browseMenuTimeoutRef = useRef(null);
+    const sliderImageBase = getApiUrl();
 
     // Validate that all menu items have links (recursively check nested items)
     const validateMenuLinks = (items, path = 'root') => {
@@ -37,7 +37,7 @@ const Layout = ({ children, showMenuSlider = false }) => {
     useEffect(() => {
         const loadMenus = async () => {
             try {
-                const apiBase = import.meta.env.VITE_API_URL;
+                const apiBase = getApiUrl();
                 const url = apiBase ? `${apiBase}/api/settings/menus` : '/api/settings/menus';
                 const data = await cachedJsonFetch(url);
 
@@ -59,7 +59,7 @@ const Layout = ({ children, showMenuSlider = false }) => {
     useEffect(() => {
         const loadSliders = async () => {
             try {
-                const apiBase = import.meta.env.VITE_API_URL;
+                const apiBase = getApiUrl();
                 const url = apiBase ? `${apiBase}/api/sliders/all` : '/api/sliders/all';
                 const data = await cachedJsonFetch(url);
                 if (Array.isArray(data) && data.length > 0) {
@@ -309,38 +309,54 @@ const Layout = ({ children, showMenuSlider = false }) => {
                             </div>
                         ) : (
                             <div className="w-full h-full relative overflow-hidden">
-                                {slides.map((slide, idx) => (
-                                    <div
-                                        key={slide._id || slide.id || idx}
-                                        className={`absolute inset-0 transition-transform duration-500 ease-in-out ${idx === currentSlide
-                                            ? 'translate-x-0'
-                                            : idx < currentSlide
-                                                ? '-translate-x-full'
-                                                : 'translate-x-full'
-                                            }`}
-                                        style={{
-                                            backgroundImage: `linear-gradient(135deg, rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${slide.bgImage.startsWith('http') ? slide.bgImage : `${import.meta.env.VITE_API_URL}${slide.bgImage}`}')`,
-                                            backgroundSize: 'cover',
-                                            backgroundPosition: 'right center',
-                                            backgroundRepeat: 'no-repeat'
-                                        }}
-                                    >
-                                        {/* Slide Content */}
-                                        <div className="flex items-center justify-between h-full px-6 relative">
-                                            {/* Left Content */}
-                                            <div className="flex-1 text-white z-10 sm:ml-12 ml-4">
-                                                <h2 className="text-4xl font-bold mb-4">{slide.title}</h2>
-                                                <p className="text-lg mb-8 leading-relaxed max-w-md">{slide.description}</p>
-                                                <Link
-                                                    to={slide.buttonLink}
-                                                    className="inline-block bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-light)] text-white font-bold px-8 py-3 rounded-lg transition duration-300 shadow-lg"
-                                                >
-                                                    {slide.buttonText}
-                                                </Link>
-                                            </div>
+                                {slides.map((slide, idx) => {
+                                    const imageSrc = slide.bgImage?.startsWith('http')
+                                        ? slide.bgImage
+                                        : `${sliderImageBase}${slide.bgImage}`;
+
+                                    return (
+                                        <div
+                                            key={slide._id || slide.id || idx}
+                                            className={`absolute inset-0 transition-opacity duration-700 ease-out ${idx === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                                                }`}
+                                        >
+                                            <img
+                                                src={imageSrc}
+                                                alt={slide.title || 'Promotional banner'}
+                                                className="absolute inset-0 h-full w-full object-cover object-center"
+                                                loading={idx === 0 ? 'eager' : 'lazy'}
+                                                fetchpriority={idx === 0 ? 'high' : 'auto'}
+                                                decoding="async"
+                                            />
+                                            <div
+                                                className="absolute inset-0 bg-[linear-gradient(90deg,rgba(15,23,42,0.82)_0%,rgba(34,24,16,0.66)_42%,rgba(17,24,39,0.2)_100%)]"
+                                                aria-hidden="true"
+                                            ></div>
                                         </div>
+                                    );
+                                })}
+
+                                <div className="relative z-20 flex h-full items-center px-6 sm:px-10 lg:px-14">
+                                    <div className="max-w-3xl text-white">
+                                        
+                                        <h2 className="text-2xl font-black leading-tight sm:text-3xl lg:text-4xl">
+                                            {slides[currentSlide]?.title}
+                                        </h2>
+                                        {slides[currentSlide]?.description && (
+                                            <p className="mt-4 max-w-2xl text-base leading-8 text-white/88 sm:text-lg">
+                                                {slides[currentSlide].description}
+                                            </p>
+                                        )}
+                                        {slides[currentSlide]?.buttonLink && slides[currentSlide]?.buttonText && (
+                                            <Link
+                                                to={slides[currentSlide].buttonLink}
+                                                className="mt-8 inline-block rounded-xl bg-[var(--color-accent-primary)] px-8 py-4 text-xl font-bold text-white shadow-lg transition duration-300 hover:bg-[var(--color-accent-light)]"
+                                            >
+                                                {slides[currentSlide].buttonText}
+                                            </Link>
+                                        )}
                                     </div>
-                                ))}
+                                </div>
 
                                 {/* Navigation Arrows */}
                                 <button

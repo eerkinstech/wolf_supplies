@@ -1,4 +1,3 @@
-'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from "react-router-dom";
@@ -20,9 +19,9 @@ const ProductManagement = () => {
 
   // categories removed — no longer fetching category list here
 
-  // Sync products from Redux
+  // Sync products from Redux (fetch all products without limit for admin)
   useEffect(() => {
-    dispatch(fetchProducts());
+    dispatch(fetchProducts({ limit: 10000 })); // Fetch up to 10000 products for admin panel
   }, [dispatch]);
 
   useEffect(() => {

@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="shortcut icon" href="public/favicon.png" type="image/x-icon">
+  <link rel="shortcut icon" href="/favicon.avif" type="image/x-icon">
+  <link rel="preload" as="image" href="/Wolf Supplies LTD.webp" fetchpriority="high">
 
   <!-- DNS Prefetch for API -->
   <link rel="dns-prefetch" href="https://wolfsupplies.co.uk">
@@ -17,8 +18,15 @@
 
   <!-- Load Google Fonts -->
   <link
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;300;400;500;700;900&family=Space+Grotesk:wght@300;400;500;700&display=swap"
-    rel="stylesheet">
+    rel="preload"
+    as="style"
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap"
+    onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&display=swap"
+      rel="stylesheet">
+  </noscript>
   <meta name="google-site-verification" content="uQvzmcgYMV1iH27MFq4d1eVM3_HhhQ0HV0RHkBQeLWg" />
   <title>Wolf Supplies | Premium Quality Products, Fast UK Delivery & 31-Day Returns</title>
   <meta name="description"

@@ -1381,7 +1381,7 @@ const ProductDetailPage = () => {
                   <div className="flex-1">
                     <div className="">
                       <img
-                        src="/Strip Logos.png"
+                        src="/Strip Logos.webp"
                         alt="Payment methods"
                         className="h-8 object-contain"
                       />

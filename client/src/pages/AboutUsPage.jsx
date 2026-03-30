@@ -62,7 +62,7 @@ const AboutUsPage = () => {
               </div>
               <div className="bg-(--color-bg-section) rounded-lg p-8 border-2 border-(--color-border-light)">
                 <div className="text-center">
-                  <img src="/Wolf Supplies LTD.png" alt="Wolf Supplies Logo" className="h-auto w-auto mx-auto mb-4" />
+                  <img src="/Wolf Supplies LTD.webp" alt="Wolf Supplies Logo" className="h-auto w-auto mx-auto mb-4" />
                   <div className="text-sm text-gray-600 space-y-1">
                     <p><strong>Wolf Supplies</strong></p>
                     <p>Company Number: <a href="https://find-and-update.company-information.service.gov.uk/company/16070029" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:underline">16070029</a></p>

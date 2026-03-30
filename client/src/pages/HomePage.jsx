@@ -1,52 +1,105 @@
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import Layout from '../components/Layout/Layout';
-import FeaturedCategories from '../components/Categories/FeaturedCategories/FeaturedCategories';
-import FeaturedProducts from '../components/Products/FeaturedProducts/FeaturedProducts';
-import Newsletter from '../components/Newsletter/Newsletter';
-import AboutSection from '../components/About/AboutSection';
 import FeaturesSection from '../components/Features/FeaturesSection';
-import { useDispatch } from 'react-redux';
-import { fetchProducts } from '../redux/slices/productSlice';
-import { fetchCategories } from '../redux/slices/categorySlice';
 import { getApiUrl } from '../utils/envHelper';
 
+const FeaturedCategories = lazy(() => import('../components/Categories/FeaturedCategories/FeaturedCategories'));
+const FeaturedProducts = lazy(() => import('../components/Products/FeaturedProducts/FeaturedProducts'));
+const Newsletter = lazy(() => import('../components/Newsletter/Newsletter'));
+const AboutSection = lazy(() => import('../components/About/AboutSection'));
+
+const SectionPlaceholder = ({ minHeight = 320 }) => (
+  <div
+    className="w-full animate-pulse rounded-2xl bg-[var(--color-bg-secondary)]"
+    style={{ minHeight }}
+    aria-hidden="true"
+  />
+);
+
+const DeferredSection = ({ children, minHeight = 320, rootMargin = '240px' }) => {
+  const containerRef = useRef(null);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  useEffect(() => {
+    if (shouldRender) {
+      return undefined;
+    }
+
+    const node = containerRef.current;
+    if (!node) {
+      return undefined;
+    }
+
+    if (!('IntersectionObserver' in window)) {
+      setShouldRender(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldRender(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin }
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [rootMargin, shouldRender]);
+
+  return (
+    <div ref={containerRef}>
+      {shouldRender ? (
+        <Suspense fallback={<SectionPlaceholder minHeight={minHeight} />}>
+          {children}
+        </Suspense>
+      ) : (
+        <SectionPlaceholder minHeight={minHeight} />
+      )}
+    </div>
+  );
+};
+
 const HomePage = () => {
-  const dispatch = useDispatch();
   const API_URL = getApiUrl();
 
   const [featuredCategoriesConfig, setFeaturedCategoriesConfig] = useState(null);
   const [featuredProductsConfig, setFeaturedProductsConfig] = useState([]);
 
   /**
-   * Load home page data once on component mount
+   * Keep homepage top-of-page work minimal
    */
   useEffect(() => {
-    dispatch(fetchCategories());
-    dispatch(fetchProducts());
     window.scrollTo(0, 0);
-  }, [dispatch]);
+  }, []);
 
   /**
    * Load featured collections once on component mount
    */
   useEffect(() => {
+    let cancelled = false;
+
     const loadFeaturedCollections = async () => {
       try {
         const response = await fetch(`${API_URL}/api/settings/featured-collections`);
         const data = await response.json();
+        if (cancelled) {
+          return;
+        }
         setFeaturedCategoriesConfig(data?.featuredCategories || null);
-        setFeaturedProductsConfig(
-          Array.isArray(data?.featuredProducts) ? data.featuredProducts : []
-        );
+        setFeaturedProductsConfig(Array.isArray(data?.featuredProducts) ? data.featuredProducts : []);
       } catch (error) {
       }
     };
-
     loadFeaturedCollections();
+
+    return () => {
+      cancelled = true;
+    };
   }, [API_URL]);
 
   return (
@@ -75,19 +128,25 @@ const HomePage = () => {
 
           {/* Featured Categories */}
           <section className="py-4 px-4">
-            <FeaturedCategories editorContent={featuredCategoriesConfig} />
+            <DeferredSection minHeight={420}>
+              <FeaturedCategories editorContent={featuredCategoriesConfig} />
+            </DeferredSection>
           </section>
 
           {/* Featured Products */}
           {featuredProductsConfig && featuredProductsConfig.length > 0 ? (
             featuredProductsConfig.map((productConfig, index) => (
               <section key={`prod-${index}`} className="py-4 px-4">
-                <FeaturedProducts editorContent={productConfig} />
+                <DeferredSection minHeight={620}>
+                  <FeaturedProducts editorContent={productConfig} />
+                </DeferredSection>
               </section>
             ))
           ) : (
             <section className="py-4 px-4">
-              <FeaturedProducts />
+              <DeferredSection minHeight={620}>
+                <FeaturedProducts />
+              </DeferredSection>
             </section>
           )}
 
@@ -95,12 +154,16 @@ const HomePage = () => {
 
           {/* Newsletter */}
           <section className="py-4 px-4">
-            <Newsletter />
+            <DeferredSection minHeight={360}>
+              <Newsletter />
+            </DeferredSection>
           </section>
 
           {/* About */}
           <section>
-            <AboutSection />
+            <DeferredSection minHeight={520}>
+              <AboutSection />
+            </DeferredSection>
           </section>
 
 

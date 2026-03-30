@@ -11,6 +11,7 @@ from middleware.auth_middleware import protect, admin
 from database import db
 from bson import ObjectId
 from datetime import datetime
+from utils.caching import cached_endpoint
 
 router = APIRouter()
 
@@ -35,6 +36,7 @@ def check_product_permission(user: dict):
     return False
 
 @router.get("/")
+@cached_endpoint(ttl=900, key_prefix="products")
 async def fetch_products(
     search: str | None = Query(None),
     category: str | None = Query(None),

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import path from 'path'
 
 const seoHtmlProxyPlugin = () => ({
   name: 'seo-html-proxy',
@@ -48,11 +49,58 @@ const seoHtmlProxyPlugin = () => ({
   },
 })
 
-// https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   plugins: [react(), tailwindcss(), seoHtmlProxyPlugin()],
-
+  build: {
+    target: 'es2020',
+    minify: 'terser',
+    cssMinify: true,
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+      mangle: true,
+      format: {
+        comments: false,
+      },
+    },
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000,
+    reportCompressedSize: false,
+    // Optimized code splitting - fewer, larger chunks for better performance
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // Keep vendor code separate for long-term caching
+          if (id.includes('node_modules')) {
+            if (id.includes('react')) {
+              return 'vendor-react';
+            }
+            if (id.includes('@reduxjs') || id.includes('redux')) {
+              return 'vendor-redux';
+            }
+            if (id.includes('@stripe')) {
+              return 'vendor-stripe';
+            }
+            // Group other vendors together
+            return 'vendor-other';
+          }
+          // Keep admin pages separate
+          if (id.includes('/admin/')) {
+            return 'admin';
+          }
+        },
+      },
+    },
+  },
   server: {
+    middlewareMode: false,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
@@ -63,35 +111,24 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173,
+    },
   },
-
-  build: {
-    target: 'es2020',
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-      },
-    },
-
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'vendor': ['react', 'react-dom', 'react-router-dom'],
-          'redux': ['@reduxjs/toolkit', 'react-redux'],
-          'forms': ['react-hook-form', '@hookform/resolvers', 'yup'],
-          'editor': ['@tiptap/react', '@tiptap/starter-kit'],
-        },
-      },
-    },
-
-    sourcemap: false,
-    chunkSizeWarningLimit: 500,
-  },
-
-  resolve: {
-    alias: {
-      '@': '/src',
-    },
+  // Aggressive dependency optimization
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'axios',
+      '@reduxjs/toolkit',
+      'react-redux',
+      'react-hot-toast',
+      'react-helmet-async',
+    ],
+    exclude: ['@tiptap/pm'],
   },
 })

@@ -6,6 +6,7 @@ import os
 import json
 from starlette.concurrency import run_in_threadpool
 from middleware.auth_middleware import protect, admin
+from utils.caching import cached_endpoint
 
 router = APIRouter()
 
@@ -44,6 +45,7 @@ def check_settings_permission(user: dict, permission_id: str):
     return False
 
 @router.get("/featured-collections")
+@cached_endpoint(ttl=600, key_prefix="featured_collections")
 async def get_featured_collections():
     """Get featured categories and products from settings"""
     try:

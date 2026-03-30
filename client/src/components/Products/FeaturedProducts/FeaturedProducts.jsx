@@ -1,15 +1,14 @@
-'use client';
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { fetchProducts } from '../../../redux/slices/productSlice';
 import { fetchCategories } from '../../../redux/slices/categorySlice';
 import ProductCard from '../ProductCard/ProductCard';
-
+import { cachedJsonFetch } from '../../../utils/apiCache';
+import { getApiUrl } from '../../../utils/envHelper';
 
 const FeaturedProducts = ({
     category = '',
+    selectedProductIds = [],
     limit = 8,
     title = 'Featured Products',
     layout = 'grid', // 'grid' or 'carousel'
@@ -25,6 +24,7 @@ const FeaturedProducts = ({
     if (editorContent) {
         title = editorContent.title || title;
         category = editorContent.category || category;
+        selectedProductIds = editorContent.selectedProductIds || selectedProductIds;
         limit = editorContent.limit || limit;
         layout = editorContent.layout || layout;
         columns = editorContent.columns || columns;
@@ -38,23 +38,45 @@ const FeaturedProducts = ({
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [screenSize, setScreenSize] = useState('lg');
-    const { products, loading } = useSelector((state) => state.product);
+    const [localProducts, setLocalProducts] = useState([]); // Store products locally for this component
+    const [loading, setLoading] = useState(true); // Local loading state
     const { categories } = useSelector((state) => state.category);
-    // Normalize `products` to an array in case the API returned an object { products: [...] }
-    const normalizedProducts = Array.isArray(products) ? products : (products && products.products) || [];
+    const { hasLoaded: categoriesLoaded } = useSelector((state) => state.category);
+    const normalizedSelectedProductIds = useMemo(
+        () => (Array.isArray(selectedProductIds) ? selectedProductIds.map((id) => String(id)) : []),
+        [selectedProductIds]
+    );
+    // Normalize `products` to an array - use local state instead of Redux
+    const normalizedProducts = useMemo(() => {
+        return Array.isArray(localProducts) ? localProducts : (localProducts && localProducts.products) || [];
+    }, [localProducts]);
 
-    const flattenCategories = (items = []) => {
-        let result = [];
-        for (const item of items) {
-            result.push(item);
-            if (Array.isArray(item?.subcategories) && item.subcategories.length > 0) {
-                result = result.concat(flattenCategories(item.subcategories));
+    const flattenCategories = useMemo(() => {
+        return (items = []) => {
+            let result = [];
+            for (const item of items) {
+                result.push(item);
+                if (Array.isArray(item?.subcategories) && item.subcategories.length > 0) {
+                    result = result.concat(flattenCategories(item.subcategories));
+                }
             }
-        }
-        return result;
-    };
+            return result;
+        };
+    }, []);
 
-    const normalizedCategories = flattenCategories(Array.isArray(categories) ? categories : []);
+    const normalizedCategories = useMemo(() => {
+        const flat = (items = []) => {
+            let result = [];
+            for (const item of items) {
+                result.push(item);
+                if (Array.isArray(item?.subcategories) && item.subcategories.length > 0) {
+                    result = result.concat(flat(item.subcategories));
+                }
+            }
+            return result;
+        };
+        return flat(Array.isArray(categories) ? categories : []);
+    }, [categories]);
 
     // Map spacing values to Tailwind classes
     const getSpacingClass = (spacingValue) => {
@@ -136,23 +158,50 @@ const FeaturedProducts = ({
     }, []);
 
     useEffect(() => {
-        // Fetch products if not already loaded
-        if (!Array.isArray(products) || products.length === 0) {
-            dispatch(fetchProducts());
-        }
-        if (!Array.isArray(categories) || categories.length === 0) {
+        const fetchAndCache = async () => {
+            try {
+                setLoading(true);
+                const data = await cachedJsonFetch(
+                    `${getApiUrl()}/api/products?limit=10000`
+                );
+                setLocalProducts(Array.isArray(data) ? data : (data?.products || []));
+            } catch (error) {
+                console.error('Failed to fetch products:', error);
+                setLocalProducts([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAndCache();
+
+        if (!categoriesLoaded) {
             dispatch(fetchCategories());
         }
-    }, [dispatch, products, categories]);
+    }, [dispatch, categoriesLoaded]);
 
     useEffect(() => {
         // Filter products by category - no limit applied here
-        // Grid mode shows all, carousel mode will handle showing 5 at a time
+        // Manual selection takes priority. Otherwise filter by category.
         if (normalizedProducts && normalizedProducts.length > 0) {
             let filtered = normalizedProducts;
 
-            // Filter by category if provided
-            if (category && category.trim()) {
+            if (normalizedSelectedProductIds.length > 0) {
+                const selectedIdSet = new Set(normalizedSelectedProductIds);
+                const productMap = new Map(
+                    normalizedProducts.map((product) => [String(product._id || product.id), product])
+                );
+
+                filtered = normalizedSelectedProductIds
+                    .map((id) => productMap.get(id))
+                    .filter(Boolean);
+
+                if (filtered.length === 0) {
+                    filtered = normalizedProducts.filter((product) =>
+                        selectedIdSet.has(String(product._id || product.id))
+                    );
+                }
+            } else if (category && category.trim()) {
                 const normalizedTarget = category.trim().toLowerCase();
                 const matchedCategory = normalizedCategories.find((cat) => {
                     const values = [cat?._id, cat?.id, cat?.name, cat?.slug]
@@ -204,8 +253,14 @@ const FeaturedProducts = ({
                 const filteredIds = filtered.map(p => p._id).join(',');
                 return prevIds === filteredIds ? prev : filtered;
             });
+        } else {
+            setFilteredProducts([]);
         }
-    }, [normalizedProducts, normalizedCategories, category]);
+    }, [normalizedProducts, normalizedCategories, category, normalizedSelectedProductIds]);
+
+    useEffect(() => {
+        setCurrentIndex(0);
+    }, [filteredProducts.length, ITEMS_PER_SLIDE]);
 
     // Carousel navigation - slides by 1 item
     const handlePrevious = () => {
@@ -218,7 +273,7 @@ const FeaturedProducts = ({
         );
     };
 
-    if (loading && products.length === 0) {
+    if (loading && localProducts.length === 0) {
         return (
             <section className="py-4 px-4 bg-[var(--color-bg-primary)]">
                 <div className="max-w-7xl mx-auto">

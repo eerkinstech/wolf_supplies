@@ -20,17 +20,25 @@ const initialState = {
 
 export const fetchProducts = createAsyncThunk(
   'product/fetchProducts',
-  async (_, { getState, rejectWithValue }) => {
+  async (options = {}, { getState, rejectWithValue }) => {
     try {
+      const { limit = 10000, category = '', search = '' } = options;
       const state = getState();
       const existing = state.product;
 
-      // If we've already loaded products once this session, reuse them
-      if (existing?.hasLoaded && Array.isArray(existing.products) && existing.products.length > 0) {
+      // If we've already loaded products once this session, reuse them (unless searching/filtering by specific category)
+      // When fetching for specific category, always fetch to ensure we get the right products
+      if (!category && !search && existing?.hasLoaded && Array.isArray(existing.products) && existing.products.length > 0) {
         return existing.products;
       }
 
-      const response = await axios.get(`${API}/api/products?limit=5000`);
+      // Build query params
+      const params = new URLSearchParams();
+      params.append('limit', limit);
+      if (category) params.append('category', category);
+      if (search) params.append('search', search);
+
+      const response = await axios.get(`${API}/api/products?${params.toString()}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);

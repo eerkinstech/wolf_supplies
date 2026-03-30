@@ -38,9 +38,52 @@ def get_products(
 ):
     try:
         coll = db.get_collection("products")
-        keyword = {"name": {"$regex": search, "$options": "i"}} if search else {}
-        count = coll.count_documents(keyword)
-        cursor = coll.find(keyword).skip((page - 1) * limit).limit(limit)
+        query = {}
+
+        if search:
+            query["name"] = {"$regex": search, "$options": "i"}
+
+        if category:
+            category_refs = [category]
+            try:
+                category_refs.append(ObjectId(category))
+            except Exception:
+                pass
+
+            query["$or"] = [
+                {"category": category},
+                {"categories": {"$in": category_refs}},
+                {"categories.name": category},
+                {"categories.slug": category},
+            ]
+
+        projection = {
+            "name": 1,
+            "slug": 1,
+            "price": 1,
+            "listingPrice": 1,
+            "originalPrice": 1,
+            "stock": 1,
+            "inStock": 1,
+            "images": 1,
+            "image": 1,
+            "categories": 1,
+            "category": 1,
+            "isDraft": 1,
+            "rating": 1,
+            "ratings": 1,
+            "numReviews": 1,
+            "variantCombinations": 1,
+            "createdAt": 1,
+        }
+
+        count = coll.count_documents(query)
+        cursor = (
+            coll.find(query, projection)
+            .sort("createdAt", -1)
+            .skip((page - 1) * limit)
+            .limit(limit)
+        )
         products = [_serialize(p) for p in cursor]
         return {"products": products, "page": page, "pages": (count + limit - 1) // limit}
     except Exception as e:

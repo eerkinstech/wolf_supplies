@@ -1,12 +1,10 @@
-'use client';
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { cachedJsonFetch } from '@/utils/apiCache';
+import { useMenus } from '@/hooks/useMenus';
 
 const Header = ({ hideMenu = false }) => {
     const location = useLocation();
@@ -27,10 +25,8 @@ const Header = ({ hideMenu = false }) => {
     const mobileSearchRef = useRef(null);
     const browseMenuTimeoutRef = useRef(null);
 
-    // local saved menu from settings (fetched below)
-    const [browseMenu, setBrowseMenu] = useState([]);
-    const [topBarMenu, setTopBarMenu] = useState([]);
-    const [mainNavMenu, setMainNavMenu] = useState([]);
+    // Use menu data from shared hook (prevents redundant API calls)
+    const { browseMenu = [], topBarMenu = [], mainNavMenu = [] } = useMenus();
 
     // Get only main categories from Redux (defensive: ensure array)
     const mainCategories = Array.isArray(categories) ? categories.filter(c => c && c.level === 'main') : [];
@@ -180,32 +176,6 @@ const Header = ({ hideMenu = false }) => {
             }
         });
     };
-
-    // Load saved menus from server (falls back to defaults if empty)
-    useEffect(() => {
-        const loadMenus = async () => {
-            try {
-                const API = import.meta.env.VITE_API_URL || '';
-                const url = API ? `${API}/api/settings/menus` : '/api/settings/menus';
-                const data = await cachedJsonFetch(url);
-
-                if (data.browseMenu && Array.isArray(data.browseMenu)) {
-                    validateMenuLinks(data.browseMenu);
-                    setBrowseMenu(data.browseMenu);
-                }
-                if (data.topBarMenu && Array.isArray(data.topBarMenu)) {
-                    validateMenuLinks(data.topBarMenu);
-                    setTopBarMenu(data.topBarMenu);
-                }
-                if (data.mainNavMenu && Array.isArray(data.mainNavMenu)) {
-                    validateMenuLinks(data.mainNavMenu);
-                    setMainNavMenu(data.mainNavMenu);
-                }
-            } catch (err) {
-            }
-        };
-        loadMenus();
-    }, []);
 
     // Fetch wishlist count if authenticated
     useEffect(() => {
@@ -424,7 +394,7 @@ const Header = ({ hideMenu = false }) => {
 
                             {/* Logo - Center on Mobile, Left on Desktop */}
                             <Link to="/" className="flex items-center gap-2 flex-shrink-0 md:flex-shrink-0 md:flex-1 md:flex-none md:order-first flex-1 justify-center md:justify-start">
-                                <img src="/Wolf Supplies LTD.png" alt="Wolf Supplies" className="h-24 w-auto object-contain" />
+                                <img src="/Wolf Supplies LTD.webp" alt="Wolf Supplies" width="500" height="200" fetchpriority="high" decoding="async" className="h-24 w-auto object-contain" />
                             </Link>
 
                             {/* Search Bar - Main (Desktop Only) */}
@@ -449,6 +419,7 @@ const Header = ({ hideMenu = false }) => {
                                     </button>
                                     <button
                                         type="submit"
+                                        aria-label="Search products"
                                         className="h-12 md:h-14 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-light)] text-white px-5 rounded-r-full flex items-center justify-center shadow-md transition duration-300">
                                         <i className="fas fa-magnifying-glass text-lg md:text-xl"></i>
                                     </button>
@@ -478,7 +449,12 @@ const Header = ({ hideMenu = false }) => {
                                 )} */}
 
                                 {/* Wishlist */}
-                                <Link to="/wishlist" className="relative text-[var(--color-text-light)] hidden lg:block hover:text-[var(--color-accent-primary)] transition duration-300 p-2 hover:bg-[var(--color-bg-section)] rounded-lg">
+                                <Link
+                                    to="/wishlist"
+                                    aria-label="View wishlist"
+                                    title="Wishlist"
+                                    className="relative text-[var(--color-text-light)] hidden lg:block hover:text-[var(--color-accent-primary)] transition duration-300 p-2 hover:bg-[var(--color-bg-section)] rounded-lg"
+                                >
                                     <i className="fas fa-heart text-lg md:text-xl"></i>
                                     {wishlistCount > 0 && (
                                         <span className="absolute -top-1 -right-1 bg-[var(--color-error)] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
@@ -493,7 +469,12 @@ const Header = ({ hideMenu = false }) => {
                                 </Link>
 
                                 {/* Cart */}
-                                <Link to="/cart" className="relative text-[var(--color-text-light)] hover:text-[var(--color-accent-primary)] transition duration-300 p-2 hover:bg-[var(--color-bg-section)] rounded-lg">
+                                <Link
+                                    to="/cart"
+                                    aria-label="View cart"
+                                    title="Cart"
+                                    className="relative text-[var(--color-text-light)] hover:text-[var(--color-accent-primary)] transition duration-300 p-2 hover:bg-[var(--color-bg-section)] rounded-lg"
+                                >
                                     <i className="fas fa-shopping-cart text-lg md:text-xl"></i>
                                     {totalQuantity > 0 && (
                                         <span className="absolute -top-1 -right-1 bg-[var(--color-error)] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
@@ -712,7 +693,7 @@ const Header = ({ hideMenu = false }) => {
                     <div className="p-4">
                         <div className="flex items-center justify-between">
                             <Link to="/" className="flex items-center gap-2">
-                                <img src="/Wolf Supplies LTD.png" alt="Wolf Supplies" className="h-10 w-auto" />
+                                <img src="/Wolf Supplies LTD.webp" alt="Wolf Supplies" width="500" height="200" loading="lazy" decoding="async" className="h-10 w-auto" />
                             </Link>
                             <button onClick={() => setMobileMenuOpen(false)} className="text-2xl p-2 rounded-md hover:bg-[var(--color-bg-section)]">
                                 <i className="fas fa-times"></i>

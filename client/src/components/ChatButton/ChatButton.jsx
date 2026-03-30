@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { getApiUrl } from '../../utils/envHelper';
 
 import toast from 'react-hot-toast';
 
@@ -20,7 +21,7 @@ const ChatButton = () => {
     const isCheckingUnread = useRef(false);
     const isFetchingConversation = useRef(false);
 
-    const API = import.meta.env.VITE_API_URL || '';
+    const API = getApiUrl();
 
     // Load unread count from localStorage on mount
     useEffect(() => {
