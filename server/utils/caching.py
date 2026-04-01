@@ -3,6 +3,7 @@ Caching utilities for FastAPI endpoints.
 Provides decorators and utilities for HTTP caching and response optimization.
 """
 import hashlib
+import inspect
 import json
 import time
 from functools import wraps
@@ -82,6 +83,8 @@ def cached_endpoint(ttl: int = 300, key_prefix: str = ""):
             ...
     """
     def decorator(func: Callable) -> Callable:
+        is_async = inspect.iscoroutinefunction(func)
+
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
             # Extract cacheable kwargs (skip non-serializable objects)
@@ -99,10 +102,10 @@ def cached_endpoint(ttl: int = 300, key_prefix: str = ""):
             # Try to get from cache
             cached_entry = response_cache.get(cache_key)
             if cached_entry:
-                return {"_cached": True, "_cache_headers": cached_entry.get_cache_headers(), "data": cached_entry.data}
+                return cached_entry.data
             
             # Execute function
-            result = await func(*args, **kwargs) if hasattr(func, '__await__') else func(*args, **kwargs)
+            result = await func(*args, **kwargs) if is_async else func(*args, **kwargs)
             
             # Store in cache
             response_cache.set(cache_key, result, ttl)
@@ -131,7 +134,7 @@ def cached_endpoint(ttl: int = 300, key_prefix: str = ""):
             return result
         
         # Return appropriate wrapper
-        if hasattr(func, '__await__'):
+        if is_async:
             return async_wrapper
         return sync_wrapper
     
