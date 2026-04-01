@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { fetchCategories } from '../../../redux/slices/categorySlice';
 import ProductCard from '../ProductCard/ProductCard';
 import { cachedJsonFetch } from '../../../utils/apiCache';
 import { getApiUrl } from '../../../utils/envHelper';
@@ -33,50 +32,19 @@ const FeaturedProducts = ({
         titleFontSize = editorContent.titleFontSize || titleFontSize;
         descFontSize = editorContent.descFontSize || descFontSize;
     }
-    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [screenSize, setScreenSize] = useState('lg');
-    const [localProducts, setLocalProducts] = useState([]); // Store products locally for this component
+    const [localProducts, setLocalProducts] = useState([]);
     const [loading, setLoading] = useState(true); // Local loading state
-    const { categories } = useSelector((state) => state.category);
-    const { hasLoaded: categoriesLoaded } = useSelector((state) => state.category);
     const normalizedSelectedProductIds = useMemo(
         () => (Array.isArray(selectedProductIds) ? selectedProductIds.map((id) => String(id)) : []),
         [selectedProductIds]
     );
-    // Normalize `products` to an array - use local state instead of Redux
     const normalizedProducts = useMemo(() => {
         return Array.isArray(localProducts) ? localProducts : (localProducts && localProducts.products) || [];
     }, [localProducts]);
-
-    const flattenCategories = useMemo(() => {
-        return (items = []) => {
-            let result = [];
-            for (const item of items) {
-                result.push(item);
-                if (Array.isArray(item?.subcategories) && item.subcategories.length > 0) {
-                    result = result.concat(flattenCategories(item.subcategories));
-                }
-            }
-            return result;
-        };
-    }, []);
-
-    const normalizedCategories = useMemo(() => {
-        const flat = (items = []) => {
-            let result = [];
-            for (const item of items) {
-                result.push(item);
-                if (Array.isArray(item?.subcategories) && item.subcategories.length > 0) {
-                    result = result.concat(flat(item.subcategories));
-                }
-            }
-            return result;
-        };
-        return flat(Array.isArray(categories) ? categories : []);
-    }, [categories]);
 
     // Map spacing values to Tailwind classes
     const getSpacingClass = (spacingValue) => {
@@ -161,10 +129,33 @@ const FeaturedProducts = ({
         const fetchAndCache = async () => {
             try {
                 setLoading(true);
-                const data = await cachedJsonFetch(
-                    `${getApiUrl()}/api/products?limit=10000`
-                );
-                setLocalProducts(Array.isArray(data) ? data : (data?.products || []));
+                const baseUrl = getApiUrl();
+                const params = new URLSearchParams();
+                const requestedLimit = Math.max(Number(limit) || 0, normalizedSelectedProductIds.length || 0, 1);
+
+                if (normalizedSelectedProductIds.length > 0) {
+                    params.set('ids', normalizedSelectedProductIds.join(','));
+                    params.set('limit', String(requestedLimit));
+                } else if (category && category.trim()) {
+                    params.set('category', category.trim());
+                    params.set('limit', String(requestedLimit));
+                } else {
+                    params.set('limit', String(Math.max(Number(limit) || 8, 8)));
+                }
+
+                const data = await cachedJsonFetch(`${baseUrl}/api/products?${params.toString()}`);
+                const products = Array.isArray(data) ? data : (data?.products || []);
+
+                if (normalizedSelectedProductIds.length > 0) {
+                    const productMap = new Map(products.map((product) => [String(product._id || product.id), product]));
+                    setLocalProducts(
+                        normalizedSelectedProductIds
+                            .map((id) => productMap.get(id))
+                            .filter(Boolean)
+                    );
+                } else {
+                    setLocalProducts(products);
+                }
             } catch (error) {
                 console.error('Failed to fetch products:', error);
                 setLocalProducts([]);
@@ -174,15 +165,9 @@ const FeaturedProducts = ({
         };
 
         fetchAndCache();
-
-        if (!categoriesLoaded) {
-            dispatch(fetchCategories());
-        }
-    }, [dispatch, categoriesLoaded]);
+    }, [category, limit, normalizedSelectedProductIds]);
 
     useEffect(() => {
-        // Filter products by category - no limit applied here
-        // Manual selection takes priority. Otherwise filter by category.
         if (normalizedProducts && normalizedProducts.length > 0) {
             let filtered = normalizedProducts;
 
@@ -202,20 +187,7 @@ const FeaturedProducts = ({
                     );
                 }
             } else if (category && category.trim()) {
-                const normalizedTarget = category.trim().toLowerCase();
-                const matchedCategory = normalizedCategories.find((cat) => {
-                    const values = [cat?._id, cat?.id, cat?.name, cat?.slug]
-                        .filter(Boolean)
-                        .map((value) => String(value).trim().toLowerCase());
-                    return values.includes(normalizedTarget);
-                });
-
-                const acceptedValues = new Set([normalizedTarget]);
-                if (matchedCategory) {
-                    [matchedCategory._id, matchedCategory.id, matchedCategory.name, matchedCategory.slug]
-                        .filter(Boolean)
-                        .forEach((value) => acceptedValues.add(String(value).trim().toLowerCase()));
-                }
+                const acceptedValues = new Set([category.trim().toLowerCase()]);
 
                 filtered = filtered.filter((product) => {
                     if (Array.isArray(product.categories)) {
@@ -256,7 +228,7 @@ const FeaturedProducts = ({
         } else {
             setFilteredProducts([]);
         }
-    }, [normalizedProducts, normalizedCategories, category, normalizedSelectedProductIds]);
+    }, [normalizedProducts, category, normalizedSelectedProductIds]);
 
     useEffect(() => {
         setCurrentIndex(0);

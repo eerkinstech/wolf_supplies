@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import Layout from '../components/Layout/Layout';
 import FeaturesSection from '../components/Features/FeaturesSection';
+import { cachedJsonFetch } from '../utils/apiCache';
 import { getApiUrl } from '../utils/envHelper';
 
 const FeaturedCategories = lazy(() => import('../components/Categories/FeaturedCategories/FeaturedCategories'));
@@ -66,6 +67,7 @@ const DeferredSection = ({ children, minHeight = 320, rootMargin = '240px' }) =>
 
 const HomePage = () => {
   const API_URL = getApiUrl();
+  const FEATURED_COLLECTIONS_CACHE_KEY = 'homepage_featured_collections_v1';
 
   const [featuredCategoriesConfig, setFeaturedCategoriesConfig] = useState(null);
   const [featuredProductsConfig, setFeaturedProductsConfig] = useState([]);
@@ -86,17 +88,29 @@ const HomePage = () => {
 
     const loadFeaturedCollections = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/settings/featured-collections`);
-        const data = await response.json();
+        const data = await cachedJsonFetch(`${API_URL}/api/settings/featured-collections`, { cache: 'no-cache' });
         if (cancelled) {
           return;
         }
+        sessionStorage.setItem(FEATURED_COLLECTIONS_CACHE_KEY, JSON.stringify(data));
         setFeaturedCategoriesConfig(data?.featuredCategories || null);
         setFeaturedProductsConfig(Array.isArray(data?.featuredProducts) ? data.featuredProducts : []);
       } catch (error) {
         if (!cancelled) {
-          setFeaturedCategoriesConfig(null);
-          setFeaturedProductsConfig([]);
+          const cachedData = sessionStorage.getItem(FEATURED_COLLECTIONS_CACHE_KEY);
+          if (cachedData) {
+            try {
+              const parsed = JSON.parse(cachedData);
+              setFeaturedCategoriesConfig(parsed?.featuredCategories || null);
+              setFeaturedProductsConfig(Array.isArray(parsed?.featuredProducts) ? parsed.featuredProducts : []);
+            } catch {
+              setFeaturedCategoriesConfig(null);
+              setFeaturedProductsConfig([]);
+            }
+          } else {
+            setFeaturedCategoriesConfig(null);
+            setFeaturedProductsConfig([]);
+          }
         }
       } finally {
         if (!cancelled) {

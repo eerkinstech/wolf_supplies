@@ -33,6 +33,7 @@ def _serialize(obj):
 def get_products(
     search: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
+    ids: Optional[str] = Query(None),
     page: int = Query(1),
     limit: int = Query(20),
 ):
@@ -42,6 +43,20 @@ def get_products(
 
         if search:
             query["name"] = {"$regex": search, "$options": "i"}
+
+        if ids:
+            raw_ids = [item.strip() for item in ids.split(",") if item and item.strip()]
+            object_ids = []
+            string_ids = []
+
+            for raw_id in raw_ids:
+                string_ids.append(raw_id)
+                try:
+                    object_ids.append(ObjectId(raw_id))
+                except Exception:
+                    pass
+
+            query["_id"] = {"$in": [*string_ids, *object_ids]}
 
         if category:
             category_refs = [category]
