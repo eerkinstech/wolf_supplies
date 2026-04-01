@@ -3,15 +3,16 @@ import { cachedJsonFetch } from '@/utils/apiCache';
 import { getApiUrl } from '@/utils/envHelper';
 
 // Shared menu data cache across the app
-const menusCacheRef = { 
-  data: null, 
+const menusCacheRef = {
+  data: null,
   promise: null,
-  loaded: false 
+  loaded: false
 };
 
 export const useMenus = () => {
   const [menus, setMenus] = useState({
     browseMenu: [],
+    mainNavMenu: [],
     footerMenu: [],
     policiesMenu: [],
     topBarMenu: []
@@ -50,14 +51,15 @@ export const useMenus = () => {
           const API = getApiUrl();
           const url = API ? `${API}/api/settings/menus` : '/api/settings/menus';
           const response = await cachedJsonFetch(url);
-          
+
           const parsedData = {
             browseMenu: response.browseMenu || [],
+            mainNavMenu: response.mainNavMenu || [],
             footerMenu: response.footerMenu || [],
             policiesMenu: response.policiesMenu || [],
             topBarMenu: response.topBarMenu || []
           };
-          
+
           menusCacheRef.data = parsedData;
           menusCacheRef.loaded = true;
           return parsedData;
