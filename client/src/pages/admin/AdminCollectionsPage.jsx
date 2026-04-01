@@ -1,23 +1,18 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchProducts } from '../../redux/slices/productSlice';
-import { fetchCategories } from '../../redux/slices/categorySlice';
+import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/Admin/AdminLayout/AdminLayout.jsx';
 import { getApiUrl } from '../../utils/envHelper';
 
 const AdminCollectionsPage = () => {
-    const dispatch = useDispatch();
-    const { categories } = useSelector((s) => s.category);
-    const { products: allProducts = [] } = useSelector((s) => s.product);
     const API_URL = getApiUrl();
 
     const [collectionsLoading, setCollectionsLoading] = useState(true);
 
     const [allCategories, setAllCategories] = useState([]);
+    const [allProducts, setAllProducts] = useState([]);
     const [activeTab, setActiveTab] = useState('categories'); // 'categories' or 'products'
     const [productSearchTerms, setProductSearchTerms] = useState({ 0: '', 1: '', 2: '' }); // Search term per section
 
@@ -40,19 +35,12 @@ const AdminCollectionsPage = () => {
     ];
 
     useEffect(() => {
-        dispatch(fetchCategories({ force: true }));
-        dispatch(fetchProducts({ limit: 10000, force: true }));
-    }, [dispatch]);
-
-    useEffect(() => {
-        // Recursively flatten all categories (main, sub, and sub-sub)
         const flattenCategories = (cats) => {
             let result = [];
             if (!cats || !Array.isArray(cats)) return result;
 
             for (const cat of cats) {
                 result.push(cat);
-                // Recursively add subcategories
                 if (cat.subcategories && Array.isArray(cat.subcategories)) {
                     result = result.concat(flattenCategories(cat.subcategories));
                 }
@@ -60,22 +48,43 @@ const AdminCollectionsPage = () => {
             return result;
         };
 
-        const flat = flattenCategories(categories || []);
-        setAllCategories(flat || []);
-    }, [categories]);
-
-    // Load featured collections from database
-    useEffect(() => {
         const loadFeaturedCollections = async () => {
             try {
                 setCollectionsLoading(true);
-                const response = await fetch(`${API_URL}/api/settings/featured-collections`, {
+                const noStoreOptions = {
                     cache: 'no-store',
                     headers: {
                         'Cache-Control': 'no-cache',
                     },
-                });
-                const data = await response.json();
+                };
+
+                const [settingsResponse, categoriesResponse, productsResponse] = await Promise.all([
+                    fetch(`${API_URL}/api/settings/featured-collections`, noStoreOptions),
+                    fetch(`${API_URL}/api/categories`, noStoreOptions),
+                    fetch(`${API_URL}/api/products?limit=10000`, noStoreOptions),
+                ]);
+
+                const [settingsData, categoriesData, productsData] = await Promise.all([
+                    settingsResponse.json(),
+                    categoriesResponse.json(),
+                    productsResponse.json(),
+                ]);
+
+                const categoriesList = Array.isArray(categoriesData)
+                    ? categoriesData
+                    : Array.isArray(categoriesData?.categories)
+                        ? categoriesData.categories
+                        : [];
+                const productsList = Array.isArray(productsData)
+                    ? productsData
+                    : Array.isArray(productsData?.products)
+                        ? productsData.products
+                        : [];
+
+                setAllCategories(flattenCategories(categoriesList));
+                setAllProducts(productsList);
+
+                const data = settingsData;
                 if (data.featuredCategories) {
                     setFeaturedCategoryNames(data.featuredCategories.categoryNames || []);
                     setFeaturedCategoryLayout(data.featuredCategories.layout || 'grid');
