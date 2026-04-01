@@ -16,13 +16,14 @@ const initialState = {
 
 export const fetchCategories = createAsyncThunk(
   'category/fetchCategories',
-  async (_, { getState, rejectWithValue }) => {
+  async (options = {}, { getState, rejectWithValue }) => {
     try {
+      const { force = false } = options;
       const state = getState();
       const existing = state.category;
 
       // If categories are already loaded once, reuse them instead of hitting the API again
-      if (existing?.hasLoaded && Array.isArray(existing.categories) && existing.categories.length > 0) {
+      if (!force && existing?.hasLoaded && Array.isArray(existing.categories) && existing.categories.length > 0) {
         return existing.categories;
       }
 

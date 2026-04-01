@@ -15,7 +15,7 @@ const AdminCollectionsPage = () => {
     const { products: allProducts = [] } = useSelector((s) => s.product);
     const API_URL = getApiUrl();
 
-    const fetchedCollectionsRef = useRef(false);
+    const [collectionsLoading, setCollectionsLoading] = useState(true);
 
     const [allCategories, setAllCategories] = useState([]);
     const [activeTab, setActiveTab] = useState('categories'); // 'categories' or 'products'
@@ -33,9 +33,15 @@ const AdminCollectionsPage = () => {
         { title: 'Featured Products 3', category: '', limit: 4, layout: 'grid', selectedProductIds: [] },
     ]);
 
+    const defaultSections = [
+        { title: 'Featured Products 1', category: '', limit: 4, layout: 'grid', selectedProductIds: [] },
+        { title: 'Featured Products 2', category: '', limit: 4, layout: 'grid', selectedProductIds: [] },
+        { title: 'Featured Products 3', category: '', limit: 4, layout: 'grid', selectedProductIds: [] },
+    ];
+
     useEffect(() => {
-        dispatch(fetchCategories());
-        dispatch(fetchProducts({ limit: 10000 }));
+        dispatch(fetchCategories({ force: true }));
+        dispatch(fetchProducts({ limit: 10000, force: true }));
     }, [dispatch]);
 
     useEffect(() => {
@@ -60,11 +66,9 @@ const AdminCollectionsPage = () => {
 
     // Load featured collections from database
     useEffect(() => {
-        if (fetchedCollectionsRef.current) return; // Prevent multiple fetches
-        fetchedCollectionsRef.current = true;
-
         const loadFeaturedCollections = async () => {
             try {
+                setCollectionsLoading(true);
                 const response = await fetch(`${API_URL}/api/settings/featured-collections`, {
                     cache: 'no-store',
                     headers: {
@@ -77,18 +81,28 @@ const AdminCollectionsPage = () => {
                     setFeaturedCategoryLayout(data.featuredCategories.layout || 'grid');
                     setFeaturedCategoryColumns(data.featuredCategories.columns || 5);
                 }
-                if (data.featuredProducts && Array.isArray(data.featuredProducts) && data.featuredProducts.length > 0) {
-                    setFeaturedProductsSections(data.featuredProducts.map(section => ({
-                        ...section,
-                        selectedProductIds: section.selectedProductIds || []
-                    })));
-                }
+                const savedSections = Array.isArray(data.featuredProducts) ? data.featuredProducts : [];
+                const normalizedSections = defaultSections.map((defaultSection, index) => {
+                    const savedSection = savedSections[index] || {};
+                    return {
+                        ...defaultSection,
+                        ...savedSection,
+                        title: savedSection.title ?? defaultSection.title,
+                        category: savedSection.category ?? defaultSection.category,
+                        limit: Number(savedSection.limit ?? defaultSection.limit),
+                        layout: savedSection.layout ?? defaultSection.layout,
+                        selectedProductIds: Array.isArray(savedSection.selectedProductIds) ? savedSection.selectedProductIds : [],
+                    };
+                });
+                setFeaturedProductsSections(normalizedSections);
             } catch (e) {
                 console.error('Error loading featured collections:', e);
+            } finally {
+                setCollectionsLoading(false);
             }
         };
         loadFeaturedCollections();
-    }, []);
+    }, [API_URL]);
 
     // Save Featured Categories to Database
     const handleSaveFeaturedCategories = async () => {
@@ -281,6 +295,12 @@ const AdminCollectionsPage = () => {
                     </div>
                 </div>
 
+                {collectionsLoading ? (
+                    <div className="rounded-xl border p-8 text-center" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)', borderWidth: '1px' }}>
+                        <p style={{ color: 'var(--color-text-light)' }}>Loading saved collections...</p>
+                    </div>
+                ) : (
+                <>
                 {/* Tab Navigation */}
                 <div className="rounded-t-xl sticky top-0 z-10" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-light)', borderBottomWidth: '1px' }}>
                     <div className="flex">
@@ -701,6 +721,8 @@ const AdminCollectionsPage = () => {
                             </div>
                         </div>
                     </div>
+                )}
+                </>
                 )}
             </main>
         </AdminLayout>

@@ -22,13 +22,13 @@ export const fetchProducts = createAsyncThunk(
   'product/fetchProducts',
   async (options = {}, { getState, rejectWithValue }) => {
     try {
-      const { limit = 10000, category = '', search = '' } = options;
+      const { limit = 10000, category = '', search = '', force = false } = options;
       const state = getState();
       const existing = state.product;
 
       // If we've already loaded products once this session, reuse them (unless searching/filtering by specific category)
       // When fetching for specific category, always fetch to ensure we get the right products
-      if (!category && !search && existing?.hasLoaded && Array.isArray(existing.products) && existing.products.length > 0) {
+      if (!force && !category && !search && existing?.hasLoaded && Array.isArray(existing.products) && existing.products.length > 0 && existing.products.length >= limit) {
         return existing.products;
       }
 
