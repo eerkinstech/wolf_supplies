@@ -7,12 +7,13 @@ import { fetchCategories } from '../../redux/slices/categorySlice';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/Admin/AdminLayout/AdminLayout.jsx';
+import { getApiUrl } from '../../utils/envHelper';
 
 const AdminCollectionsPage = () => {
     const dispatch = useDispatch();
     const { categories } = useSelector((s) => s.category);
     const { products: allProducts = [] } = useSelector((s) => s.product);
-    const API_URL = import.meta.env.VITE_API_URL;
+    const API_URL = getApiUrl();
 
     const fetchedCollectionsRef = useRef(false);
 
@@ -64,7 +65,12 @@ const AdminCollectionsPage = () => {
 
         const loadFeaturedCollections = async () => {
             try {
-                const response = await fetch(`${API_URL}/api/settings/featured-collections`);
+                const response = await fetch(`${API_URL}/api/settings/featured-collections`, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                    },
+                });
                 const data = await response.json();
                 if (data.featuredCategories) {
                     setFeaturedCategoryNames(data.featuredCategories.categoryNames || []);

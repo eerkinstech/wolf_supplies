@@ -56,6 +56,12 @@ class ResponseCache:
     def clear(self):
         """Clear all cache"""
         self.cache.clear()
+
+    def clear_matching(self, prefix: str):
+        """Clear cache entries whose key starts with the given prefix"""
+        keys_to_remove = [key for key in self.cache if key.startswith(prefix)]
+        for key in keys_to_remove:
+            del self.cache[key]
     
     def cleanup_expired(self):
         """Remove expired entries"""

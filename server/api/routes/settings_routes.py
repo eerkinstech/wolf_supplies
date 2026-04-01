@@ -6,7 +6,7 @@ import os
 import json
 from starlette.concurrency import run_in_threadpool
 from middleware.auth_middleware import protect, admin
-from utils.caching import cached_endpoint
+from utils.caching import cached_endpoint, response_cache
 
 router = APIRouter()
 
@@ -96,6 +96,7 @@ async def save_featured_collections(payload: dict = Body(...), user=Depends(prot
             }
         
         result = await run_in_threadpool(_save)
+        response_cache.clear_matching("featured_collections:")
         json_str = json.dumps(result, cls=MongoEncoder)
         return JSONResponse(content=json.loads(json_str))
     except Exception as e:
