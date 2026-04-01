@@ -69,6 +69,7 @@ const HomePage = () => {
 
   const [featuredCategoriesConfig, setFeaturedCategoriesConfig] = useState(null);
   const [featuredProductsConfig, setFeaturedProductsConfig] = useState([]);
+  const [featuredCollectionsLoaded, setFeaturedCollectionsLoaded] = useState(false);
 
   /**
    * Keep homepage top-of-page work minimal
@@ -93,6 +94,14 @@ const HomePage = () => {
         setFeaturedCategoriesConfig(data?.featuredCategories || null);
         setFeaturedProductsConfig(Array.isArray(data?.featuredProducts) ? data.featuredProducts : []);
       } catch (error) {
+        if (!cancelled) {
+          setFeaturedCategoriesConfig(null);
+          setFeaturedProductsConfig([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setFeaturedCollectionsLoaded(true);
+        }
       }
     };
     loadFeaturedCollections();
@@ -134,7 +143,7 @@ const HomePage = () => {
           </section>
 
           {/* Featured Products */}
-          {featuredProductsConfig && featuredProductsConfig.length > 0 ? (
+          {featuredCollectionsLoaded && featuredProductsConfig.length > 0 ? (
             featuredProductsConfig.map((productConfig, index) => (
               <section key={`prod-${index}`} className="py-4 px-4">
                 <DeferredSection minHeight={620}>
@@ -142,11 +151,15 @@ const HomePage = () => {
                 </DeferredSection>
               </section>
             ))
-          ) : (
+          ) : featuredCollectionsLoaded ? (
             <section className="py-4 px-4">
               <DeferredSection minHeight={620}>
                 <FeaturedProducts />
               </DeferredSection>
+            </section>
+          ) : (
+            <section className="py-4 px-4">
+              <SectionPlaceholder minHeight={620} />
             </section>
           )}
 
