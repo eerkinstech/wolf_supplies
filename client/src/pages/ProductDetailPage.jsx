@@ -1518,6 +1518,7 @@ const ProductDetailPage = () => {
             <RelatedProducts
               currentProductId={product._id}
               currentCategory={product.category}
+              currentProduct={product}
               limit={5}
             />
           )}

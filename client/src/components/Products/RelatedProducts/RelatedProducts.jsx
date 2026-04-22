@@ -1,26 +1,95 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { useNavigate, useLocation } from "react-router-dom";
-import { useSelector } from 'react-redux';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import ProductCard from '../ProductCard/ProductCard';
 
+const API = import.meta.env.VITE_API_URL || '';
 
-const RelatedProducts = ({ currentProductId, currentCategory }) => {
+const getCategoryValue = (category) => {
+  if (!category) return '';
+  if (typeof category === 'string') return category;
+  return category.slug || category.name || category._id || category.id || '';
+};
+
+const getProductCategories = (product) => {
+  const categories = [];
+  if (product?.category) categories.push(product.category);
+  if (Array.isArray(product?.categories)) categories.push(...product.categories);
+  return categories.map(getCategoryValue).filter(Boolean);
+};
+
+const RelatedProducts = ({ currentProductId, currentCategory, currentProduct, limit = 5 }) => {
   const navigate = useNavigate();
-  const { products } = useSelector((state) => state.product);
-  const limit = 5; // Number of related products to display
+  const [products, setProducts] = useState([]);
 
-  // Filter related products from same category, excluding current product
+  const categoryCandidates = useMemo(() => {
+    const values = [
+      currentCategory,
+      ...getProductCategories(currentProduct),
+    ]
+      .map(getCategoryValue)
+      .filter(Boolean);
+
+    return [...new Set(values)];
+  }, [currentCategory, currentProduct]);
+
+  const primaryCategory = categoryCandidates[0] || '';
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchRelatedProducts = async () => {
+      if (categoryCandidates.length === 0) {
+        setProducts([]);
+        return;
+      }
+
+      try {
+        for (const category of categoryCandidates) {
+          const params = new URLSearchParams({
+            category,
+            limit: String(limit + 1),
+          });
+          const response = await fetch(`${API}/api/products?${params.toString()}`);
+          if (!response.ok) continue;
+
+          const data = await response.json();
+          const nextProducts = Array.isArray(data) ? data : data?.products || [];
+
+          if (nextProducts.length > 0) {
+            if (!cancelled) setProducts(nextProducts);
+            return;
+          }
+        }
+
+        if (!cancelled) setProducts([]);
+      } catch {
+        if (!cancelled) setProducts([]);
+      }
+    };
+
+    fetchRelatedProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryCandidates, limit]);
+
   const relatedProducts = useMemo(() => {
-    return products
-      .filter(
-        (product) =>
-          product.category === currentCategory &&
-          product._id !== currentProductId
-      )
+    const normalizedCategories = new Set(categoryCandidates.map((category) => category.toLowerCase()));
+
+    return (Array.isArray(products) ? products : [])
+      .filter((product) => {
+        if (String(product._id || product.id) === String(currentProductId)) return false;
+        if (product.isDraft) return false;
+
+        return getProductCategories(product).some((category) =>
+          normalizedCategories.has(String(category).toLowerCase())
+        );
+      })
       .slice(0, limit);
-  }, [products, currentCategory, currentProductId, limit]);
+  }, [products, categoryCandidates, currentProductId, limit]);
 
   if (relatedProducts.length === 0) {
     return null;
@@ -37,7 +106,7 @@ const RelatedProducts = ({ currentProductId, currentCategory }) => {
           Related Products
         </h3>
         <p className="text-xl" style={{ color: 'var(--color-text-light)' }}>
-          You might also like these {currentCategory} items
+          You might also like these {primaryCategory} items
         </p>
       </div>
 
@@ -51,7 +120,7 @@ const RelatedProducts = ({ currentProductId, currentCategory }) => {
 
       <div className="mt-12 text-center">
         <button
-          onClick={() => navigate(`/products?category=${currentCategory}`)}
+          onClick={() => navigate(`/products?category=${encodeURIComponent(primaryCategory)}`)}
           className="inline-flex items-center gap-3 text-white px-10 py-4 rounded-xl font-bold text-lg transition duration-300 transform hover:scale-105 shadow-lg"
           style={{
             backgroundColor: 'var(--color-accent-primary)',
@@ -59,7 +128,7 @@ const RelatedProducts = ({ currentProductId, currentCategory }) => {
           onMouseEnter={(e) => (e.target.style.backgroundColor = 'var(--color-accent-light)')}
           onMouseLeave={(e) => (e.target.style.backgroundColor = 'var(--color-accent-primary)')}
         >
-          View All {currentCategory} Products
+          View All {primaryCategory} Products
           <i className="fas fa-chevron-right text-sm"></i>
         </button>
       </div>

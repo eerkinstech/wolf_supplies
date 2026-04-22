@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useNavigate, useLocation, useParams, Link } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchCategoryBySlug } from '../redux/slices/categorySlice';
+import { fetchCategories, fetchCategoryBySlug } from '../redux/slices/categorySlice';
 import useURLRedirect from '../hooks/useURLRedirect';
 import { fetchProducts, setFilter } from '../redux/slices/productSlice';
 import ProductCard from '../components/Products/ProductCard/ProductCard';
@@ -73,6 +73,7 @@ const CategoryDetailPage = () => {
     // Reset filter state and fetch category and products on mount/slug change
     setFilteredProducts([]);
     setSubcategories([]);
+    dispatch(fetchCategories());
     dispatch(fetchCategoryBySlug(slug));
     dispatch(fetchProducts());
     window.scrollTo(0, 0);
@@ -214,6 +215,27 @@ const CategoryDetailPage = () => {
       }))
     );
   }, [products, filters, selectedCategory]);
+
+  const relatedCategories = useMemo(() => {
+    const flattenCategories = (items = []) =>
+      items.flatMap((item) => [
+        item,
+        ...(Array.isArray(item?.subcategories) ? flattenCategories(item.subcategories) : []),
+      ]);
+
+    const allCategories = flattenCategories(Array.isArray(categories) ? categories : []);
+    const selectedIsMain = selectedCategory?.level === 'main' || !selectedCategory?.parent;
+    const currentId = selectedCategory?._id || selectedCategory?.id;
+
+    return allCategories
+      .filter((cat) => {
+        const catId = cat?._id || cat?.id;
+        if (!catId || catId === currentId) return false;
+        if (selectedIsMain) return cat.level === 'main' || !cat.parent;
+        return true;
+      })
+      .slice(0, 5);
+  }, [categories, selectedCategory]);
 
   if (loading) {
     return (
@@ -378,17 +400,14 @@ const CategoryDetailPage = () => {
       </div>
 
       {/* Related Categories Section */}
-      {selectedCategory.level === 'main' && (
+      {relatedCategories.length > 0 && (
         <div className="bg-white py-8 px-4 sm:px-6 lg:px-8 mt-6">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold text-gray-900 mb-8">Explore More Categories</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
-              {categories
-                .filter((cat) => cat.level === 'main' && cat._id !== selectedCategory._id)
-                .slice(0, 5)
-                .map((cat) => (
-                  <CategoryCard key={cat._id} category={cat} />
-                ))}
+              {relatedCategories.map((cat) => (
+                <CategoryCard key={cat._id || cat.id} category={cat} />
+              ))}
             </div>
           </div>
         </div>
