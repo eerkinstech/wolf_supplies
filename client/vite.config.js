@@ -76,9 +76,18 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Keep admin pages separate
-          if (id.includes('/admin/')) {
-            return 'admin';
+          if (id.includes('node_modules')) {
+            if (id.includes('@tiptap') || id.includes('prosemirror')) {
+              return 'editor';
+            }
+
+            if (
+              id.includes('@reduxjs/toolkit') ||
+              id.includes('react-redux') ||
+              id.includes('redux')
+            ) {
+              return 'state';
+            }
           }
         },
       },

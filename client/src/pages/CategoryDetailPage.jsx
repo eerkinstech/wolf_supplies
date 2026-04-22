@@ -70,12 +70,11 @@ const CategoryDetailPage = () => {
   useURLRedirect(!selectedCategory && !loading);
 
   useEffect(() => {
-    // Reset filter state and fetch category and products on mount/slug change
+    // Reset filter state and fetch category data on mount/slug change
     setFilteredProducts([]);
     setSubcategories([]);
     dispatch(fetchCategories());
     dispatch(fetchCategoryBySlug(slug));
-    dispatch(fetchProducts());
     window.scrollTo(0, 0);
   }, [slug, dispatch]);
 
@@ -95,6 +94,11 @@ const CategoryDetailPage = () => {
   useEffect(() => {
     if (selectedCategory) {
       dispatch(setFilter({ category: selectedCategory.name }));
+      dispatch(fetchProducts({
+        category: selectedCategory._id || selectedCategory.id || selectedCategory.name,
+        limit: 1000,
+        force: true,
+      }));
     }
   }, [selectedCategory, dispatch]);
 
