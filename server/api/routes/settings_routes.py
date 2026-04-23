@@ -1,21 +1,13 @@
 from fastapi import APIRouter, Depends, Body, HTTPException
 from fastapi.responses import JSONResponse
-from pymongo import MongoClient
 from bson import ObjectId
-import os
 import json
 from starlette.concurrency import run_in_threadpool
 from middleware.auth_middleware import protect, admin
 from utils.caching import cached_endpoint, response_cache
+from database import db
 
 router = APIRouter()
-
-# Database connection
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL environment variable is not set. Please set it in your .env file.")
-client = MongoClient(DATABASE_URL)
-db = client[os.getenv("MONGO_DB_NAME", "ecommerce")]
 
 class MongoEncoder(json.JSONEncoder):
     """Custom JSON encoder that handles MongoDB ObjectId"""

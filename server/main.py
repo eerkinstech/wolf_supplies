@@ -1328,14 +1328,30 @@ async def api_user_profile(request: Request):
         return JSONResponse(status_code=401, content={"error": "Missing or invalid token"})
     token = auth_header.split(" ", 1)[1]
     try:
-        from jose import jwt
-        payload = jwt.decode(token, "eerkinstech", algorithms=["HS256"])
-        user_id = payload.get("id")
+        from middleware.auth_middleware import decode_token
+        from bson import ObjectId
+        payload = decode_token(token)
+        user_id = payload.get("id") or payload.get("_id") or payload.get("sub")
         if not user_id:
             return JSONResponse(status_code=401, content={"error": "Invalid token"})
-        from bson import ObjectId
+
         coll = db.get_collection("users")
-        user = coll.find_one({"_id": ObjectId(user_id)})
+        queries = []
+        try:
+            queries.append({"_id": ObjectId(str(user_id))})
+        except Exception:
+            pass
+        queries.extend([
+            {"_id": str(user_id)},
+            {"id": str(user_id)},
+        ])
+
+        user = None
+        for query in queries:
+            user = coll.find_one(query)
+            if user:
+                break
+
         if not user:
             return JSONResponse(status_code=401, content={"error": "User not found"})
         return {
@@ -1385,7 +1401,7 @@ async def api_login(credentials: dict):
                 return {"error": "Invalid credentials"}
             try:
                 from jose import jwt
-                token = jwt.encode({"id": str(user.get("_id"))}, "eerkinstech", algorithm="HS256")
+                token = jwt.encode({"id": str(user.get("_id"))}, os.getenv("JWT_SECRET", "eerkinstech"), algorithm="HS256")
             except Exception as jwt_err:
                 print(f"[LOGIN ERROR] JWT generation failed: {jwt_err}")
                 return {"error": "Token generation failed"}

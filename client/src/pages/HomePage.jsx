@@ -65,6 +65,15 @@ const DeferredSection = ({ children, minHeight = 320, rootMargin = '240px' }) =>
   );
 };
 
+const hasFeaturedProductSource = (section) =>
+  Boolean(
+    section &&
+    (
+      (Array.isArray(section.selectedProductIds) && section.selectedProductIds.length > 0) ||
+      (typeof section.category === 'string' && section.category.trim())
+    )
+  );
+
 const HomePage = () => {
   const API_URL = getApiUrl();
   const FEATURED_COLLECTIONS_CACHE_KEY = 'homepage_featured_collections_v1';
@@ -94,7 +103,11 @@ const HomePage = () => {
         }
         sessionStorage.setItem(FEATURED_COLLECTIONS_CACHE_KEY, JSON.stringify(data));
         setFeaturedCategoriesConfig(data?.featuredCategories || null);
-        setFeaturedProductsConfig(Array.isArray(data?.featuredProducts) ? data.featuredProducts : []);
+        setFeaturedProductsConfig(
+          Array.isArray(data?.featuredProducts)
+            ? data.featuredProducts.filter(hasFeaturedProductSource)
+            : []
+        );
       } catch (error) {
         if (!cancelled) {
           const cachedData = sessionStorage.getItem(FEATURED_COLLECTIONS_CACHE_KEY);

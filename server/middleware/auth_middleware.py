@@ -1,35 +1,60 @@
 from fastapi import HTTPException, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
-from datetime import datetime
+import os
 from typing import Optional
 
-# Mock database lookup for user
-import os
-from pymongo import MongoClient
-
-# Use only .env for MongoDB connection
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL environment variable is not set. Please set it in your .env file.")
-client = MongoClient(DATABASE_URL)
-db = client[os.getenv("MONGO_DB_NAME", "ecommerce")]
+from database import db
 
 async def get_user_by_id(user_id: str):
     from bson import ObjectId
-    try:
-        obj_id = ObjectId(user_id)
-    except Exception:
+    if not user_id:
         return None
-    user = db.users.find_one({'_id': obj_id})
+
+    user_id = str(user_id)
+    queries = []
+
+    try:
+        queries.append({'_id': ObjectId(user_id)})
+    except Exception:
+        pass
+
+    queries.extend([
+        {'_id': user_id},
+        {'id': user_id},
+    ])
+
+    user = None
+    for query in queries:
+        user = db.users.find_one(query)
+        if user:
+            break
+
     if not user:
         return None
+
     return {
         'id': str(user.get('_id')),
         'role': user.get('role'),
         'isAdmin': user.get('isAdmin', False),
         'customRole': user.get('customRole')
     }
+
+def decode_token(token: str):
+    secrets = [
+        os.getenv("JWT_SECRET"),
+        "eerkinstech",
+        "changeme",
+    ]
+
+    last_error = None
+    for secret in dict.fromkeys(secret for secret in secrets if secret):
+        try:
+            return jwt.decode(token, secret, algorithms=["HS256"])
+        except JWTError as error:
+            last_error = error
+
+    raise last_error or JWTError("Token verification failed")
 
 # Middleware for token-based authentication
 # Use auto_error=False to handle missing token ourselves
@@ -42,8 +67,8 @@ async def protect(credentials: Optional[HTTPAuthorizationCredentials] = Security
     
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, "eerkinstech", algorithms=["HS256"])
-        user_id = payload.get("id")
+        payload = decode_token(token)
+        user_id = payload.get("id") or payload.get("_id") or payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token")
         user = await get_user_by_id(user_id)

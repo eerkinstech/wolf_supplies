@@ -2,12 +2,15 @@
 
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/Admin/AdminLayout/AdminLayout.jsx';
+import { useAuth } from '../../context/AuthContext';
 import { getApiUrl } from '../../utils/envHelper';
 
 const AdminCollectionsPage = () => {
     const API_URL = getApiUrl();
+    const navigate = useNavigate();
+    const { token: authToken, logout } = useAuth();
 
     const [collectionsLoading, setCollectionsLoading] = useState(true);
 
@@ -27,6 +30,60 @@ const AdminCollectionsPage = () => {
         { title: 'Featured Products 2', category: '', limit: 4, layout: 'grid', selectedProductIds: [] },
         { title: 'Featured Products 3', category: '', limit: 4, layout: 'grid', selectedProductIds: [] },
     ]);
+
+    const getActiveToken = () => {
+        const storedToken = localStorage.getItem('token');
+        const token = storedToken || authToken;
+        return token && token !== 'null' && token !== 'undefined' ? token : '';
+    };
+
+    const handleInvalidSession = (message) => {
+        localStorage.removeItem('token');
+        logout();
+        toast.error(message);
+        navigate('/admin/login');
+    };
+
+    const saveFeaturedCollections = async (payload) => {
+        const token = getActiveToken();
+
+        if (!token) {
+            handleInvalidSession('Please sign in again before saving.');
+            return null;
+        }
+
+        const profileResponse = await fetch(`${API_URL}/api/users/profile`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (!profileResponse.ok) {
+            const errorData = await profileResponse.json().catch(() => ({}));
+            handleInvalidSession(errorData.detail || errorData.message || errorData.error || 'Your login is no longer valid. Please sign in again.');
+            return null;
+        }
+
+        const response = await fetch(`${API_URL}/api/settings/featured-collections`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            if (response.status === 401) {
+                handleInvalidSession(errorData.detail || errorData.message || errorData.error || 'Your login is no longer valid. Please sign in again.');
+                return null;
+            }
+            throw new Error(errorData.detail || errorData.message || errorData.error || 'Failed to save');
+        }
+
+        return response.json();
+    };
 
     const defaultSections = [
         { title: 'Featured Products 1', category: '', limit: 4, layout: 'grid', selectedProductIds: [] },
@@ -167,22 +224,14 @@ const AdminCollectionsPage = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/settings/featured-collections`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
+            const result = await saveFeaturedCollections({
+                featuredCategories: {
+                    categoryNames: featuredCategoryNames,
+                    layout: featuredCategoryLayout,
+                    columns: featuredCategoryColumns,
                 },
-                body: JSON.stringify({
-                    featuredCategories: {
-                        categoryNames: featuredCategoryNames,
-                        layout: featuredCategoryLayout,
-                        columns: featuredCategoryColumns,
-                    },
-                }),
             });
-            if (!response.ok) throw new Error('Failed to save');
+            if (!result) return;
             toast.success('✅ Featured categories saved to database!');
         } catch (error) {
             toast.error('❌ Failed to save featured categories');
@@ -191,9 +240,12 @@ const AdminCollectionsPage = () => {
 
     // Save Featured Products to Database
     const handleSaveFeaturedProducts = async () => {
-        const allValid = featuredProductsSections.every((section) => {
-            // Category is optional (if empty, show all products)
-            // But limit is required
+        const sectionsToSave = featuredProductsSections.filter((section) =>
+            (Array.isArray(section.selectedProductIds) && section.selectedProductIds.length > 0) ||
+            (typeof section.category === 'string' && section.category.trim())
+        );
+
+        const allValid = sectionsToSave.every((section) => {
             if (!section.limit || section.limit < 1) {
                 return false;
             }
@@ -201,29 +253,21 @@ const AdminCollectionsPage = () => {
         });
 
         if (!allValid) {
-            toast.error('Fill all sections with limit (min 1). Category is optional - leave blank to show all products');
+            toast.error('Featured product sections need selected products or a category, plus a limit of at least 1');
             return;
         }
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/settings/featured-collections`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    featuredProducts: featuredProductsSections.map(section => ({
-                        title: section.title,
-                        category: section.category,
-                        limit: section.limit,
-                        layout: section.layout,
-                        selectedProductIds: section.selectedProductIds || []
-                    })),
-                }),
+            const result = await saveFeaturedCollections({
+                featuredProducts: sectionsToSave.map(section => ({
+                    title: section.title,
+                    category: section.category,
+                    limit: section.limit,
+                    layout: section.layout,
+                    selectedProductIds: section.selectedProductIds || []
+                })),
             });
-            if (!response.ok) throw new Error('Failed to save');
+            if (!result) return;
             toast.success('✅ Featured products saved to database!');
         } catch (error) {
             console.error('Save error:', error);

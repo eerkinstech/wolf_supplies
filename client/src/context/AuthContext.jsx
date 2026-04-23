@@ -3,11 +3,12 @@ import { useDispatch } from 'react-redux';
 import axios from 'axios';
 import { setCart, clearCart as clearCartAction, fetchCart } from '../redux/slices/cartSlice';
 import { fetchWishlist } from '../redux/slices/wishlistSlice';
+import { getApiUrl } from '../utils/envHelper';
 import toast from 'react-hot-toast';
 
 export const AuthContext = createContext();
 
-const API = import.meta.env.VITE_API_URL || '';
+const API = getApiUrl();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

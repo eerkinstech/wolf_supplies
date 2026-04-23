@@ -42,6 +42,7 @@ const FeaturedProducts = ({
         () => (Array.isArray(selectedProductIds) ? selectedProductIds.map((id) => String(id)) : []),
         [selectedProductIds]
     );
+    const hasProductSource = normalizedSelectedProductIds.length > 0 || Boolean(category && category.trim());
     const normalizedProducts = useMemo(() => {
         return Array.isArray(localProducts) ? localProducts : (localProducts && localProducts.products) || [];
     }, [localProducts]);
@@ -127,6 +128,13 @@ const FeaturedProducts = ({
 
     useEffect(() => {
         const fetchAndCache = async () => {
+            if (!hasProductSource) {
+                setLocalProducts([]);
+                setFilteredProducts([]);
+                setLoading(false);
+                return;
+            }
+
             try {
                 setLoading(true);
                 const baseUrl = getApiUrl();
@@ -139,8 +147,6 @@ const FeaturedProducts = ({
                 } else if (category && category.trim()) {
                     params.set('category', category.trim());
                     params.set('limit', String(requestedLimit));
-                } else {
-                    params.set('limit', String(Math.max(Number(limit) || 8, 8)));
                 }
 
                 const data = await cachedJsonFetch(`${baseUrl}/api/products?${params.toString()}`);
@@ -165,7 +171,7 @@ const FeaturedProducts = ({
         };
 
         fetchAndCache();
-    }, [category, limit, normalizedSelectedProductIds]);
+    }, [category, limit, normalizedSelectedProductIds, hasProductSource]);
 
     useEffect(() => {
         if (normalizedProducts && normalizedProducts.length > 0) {
@@ -233,6 +239,10 @@ const FeaturedProducts = ({
     useEffect(() => {
         setCurrentIndex(0);
     }, [filteredProducts.length, ITEMS_PER_SLIDE]);
+
+    if (!hasProductSource) {
+        return null;
+    }
 
     // Carousel navigation - slides by 1 item
     const handlePrevious = () => {
