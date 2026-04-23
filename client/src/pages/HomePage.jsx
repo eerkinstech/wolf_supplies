@@ -102,7 +102,7 @@ const HomePage = () => {
             try {
               const parsed = JSON.parse(cachedData);
               setFeaturedCategoriesConfig(parsed?.featuredCategories || null);
-              setFeaturedProductsConfig(Array.isArray(parsed?.featuredProducts) ? parsed.featuredProducts : []);
+              setFeaturedProductsConfig([]);
             } catch {
               setFeaturedCategoriesConfig(null);
               setFeaturedProductsConfig([]);
@@ -165,14 +165,8 @@ const HomePage = () => {
                 </DeferredSection>
               </section>
             ))
-          ) : featuredCollectionsLoaded ? (
-            <section className="py-4 px-4">
-              <DeferredSection minHeight={620}>
-                <FeaturedProducts />
-              </DeferredSection>
-            </section>
           ) : (
-            <section className="py-4 px-4">
+            !featuredCollectionsLoaded && <section className="py-4 px-4">
               <SectionPlaceholder minHeight={620} />
             </section>
           )}

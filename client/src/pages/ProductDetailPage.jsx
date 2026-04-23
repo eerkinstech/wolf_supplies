@@ -704,13 +704,13 @@ const ProductDetailPage = () => {
     shippingDetails: {
       '@type': 'OfferShippingDetails',
       shippingRate: {
-        '@type': 'PriceSpecification',
-        priceCurrency: 'GBP',
-        price: '0.00',
-        eligibleQuantity: {
-          '@type': 'QuantitativeValue',
-          minValue: 1
-        }
+        '@type': 'MonetaryAmount',
+        value: '0.00',
+        currency: 'GBP'
+      },
+      shippingDestination: {
+        '@type': 'DefinedRegion',
+        addressCountry: 'GB'
       },
       shippingLabel: 'Free Shipping',
       deliveryTime: {
@@ -731,16 +731,12 @@ const ProductDetailPage = () => {
     },
     hasMerchantReturnPolicy: {
       '@type': 'MerchantReturnPolicy',
+      applicableCountry: 'GB',
       returnsAccepted: true,
       returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
       merchantReturnDays: 31,
-      returnMethod: ['http://purl.org/goodrelations/v1#DeliveryModeOwnFleet', 'http://purl.org/goodrelations/v1#UPSGround'],
-      returnFees: 'https://schema.org/FreeReturn',
-      returnShippingFeesAmount: {
-        '@type': 'PriceSpecification',
-        priceCurrency: 'GBP',
-        price: '0.00'
-      }
+      returnMethod: 'https://schema.org/ReturnByMail',
+      returnFees: 'https://schema.org/FreeReturn'
     }
   });
 
