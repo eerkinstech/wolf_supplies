@@ -904,10 +904,15 @@ app.add_middleware(
 )
 print("[OK] CORS middleware initialized - allowing localhost:5173 with credentials")
 
-# Add GZip compression middleware (must be added after CORS for proper ordering)
-print("Initializing GZip compression middleware...")
-app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
-print("[OK] GZip compression middleware initialized")
+# Add GZip compression middleware only when explicitly enabled.
+# Production already sits behind Cloudflare, so app-level gzip is optional.
+enable_gzip = (os.getenv("ENABLE_GZIP") or "").strip().lower() in {"1", "true", "yes", "on"}
+if enable_gzip:
+    print("Initializing GZip compression middleware...")
+    app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
+    print("[OK] GZip compression middleware initialized")
+else:
+    print("[SKIP] GZip compression middleware disabled (set ENABLE_GZIP=true to enable)")
 
 # Add caching headers middleware
 print("Initializing caching headers middleware...")
