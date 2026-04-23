@@ -74,6 +74,9 @@ const hasFeaturedProductSource = (section) =>
     )
   );
 
+const normalizeFeaturedProductsConfig = (sections) =>
+  Array.isArray(sections) ? sections.filter(hasFeaturedProductSource) : [];
+
 const HomePage = () => {
   const API_URL = getApiUrl();
   const FEATURED_COLLECTIONS_CACHE_KEY = 'homepage_featured_collections_v1';
@@ -94,47 +97,62 @@ const HomePage = () => {
    */
   useEffect(() => {
     let cancelled = false;
+    let retryTimer = null;
+
+    const applyFeaturedCollections = (data) => {
+      setFeaturedCategoriesConfig(data?.featuredCategories || null);
+      setFeaturedProductsConfig(normalizeFeaturedProductsConfig(data?.featuredProducts));
+    };
+
+    const loadCachedFeaturedCollections = () => {
+      const cachedData = sessionStorage.getItem(FEATURED_COLLECTIONS_CACHE_KEY);
+      if (!cachedData) {
+        return false;
+      }
+
+      try {
+        applyFeaturedCollections(JSON.parse(cachedData));
+        return true;
+      } catch {
+        sessionStorage.removeItem(FEATURED_COLLECTIONS_CACHE_KEY);
+        return false;
+      }
+    };
 
     const loadFeaturedCollections = async () => {
+      const hasCachedData = loadCachedFeaturedCollections();
+      if (hasCachedData && !cancelled) {
+        setFeaturedCollectionsLoaded(true);
+      }
+
       try {
         const data = await cachedJsonFetch(`${API_URL}/api/settings/featured-collections`, { cache: 'no-cache' });
         if (cancelled) {
           return;
         }
         sessionStorage.setItem(FEATURED_COLLECTIONS_CACHE_KEY, JSON.stringify(data));
-        setFeaturedCategoriesConfig(data?.featuredCategories || null);
-        setFeaturedProductsConfig(
-          Array.isArray(data?.featuredProducts)
-            ? data.featuredProducts.filter(hasFeaturedProductSource)
-            : []
-        );
+        applyFeaturedCollections(data);
+        setFeaturedCollectionsLoaded(true);
       } catch (error) {
-        if (!cancelled) {
-          const cachedData = sessionStorage.getItem(FEATURED_COLLECTIONS_CACHE_KEY);
-          if (cachedData) {
-            try {
-              const parsed = JSON.parse(cachedData);
-              setFeaturedCategoriesConfig(parsed?.featuredCategories || null);
-              setFeaturedProductsConfig([]);
-            } catch {
-              setFeaturedCategoriesConfig(null);
-              setFeaturedProductsConfig([]);
-            }
-          } else {
-            setFeaturedCategoriesConfig(null);
-            setFeaturedProductsConfig([]);
-          }
+        if (cancelled) {
+          return;
         }
-      } finally {
-        if (!cancelled) {
+
+        if (loadCachedFeaturedCollections()) {
           setFeaturedCollectionsLoaded(true);
+        } else {
+          retryTimer = setTimeout(loadFeaturedCollections, 4000);
         }
       }
     };
+
     loadFeaturedCollections();
 
     return () => {
       cancelled = true;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+      }
     };
   }, [API_URL]);
 

@@ -38,6 +38,7 @@ const FeaturedProducts = ({
     const [screenSize, setScreenSize] = useState('lg');
     const [localProducts, setLocalProducts] = useState([]);
     const [loading, setLoading] = useState(true); // Local loading state
+    const [productRetryKey, setProductRetryKey] = useState(0);
     const normalizedSelectedProductIds = useMemo(
         () => (Array.isArray(selectedProductIds) ? selectedProductIds.map((id) => String(id)) : []),
         [selectedProductIds]
@@ -127,6 +128,9 @@ const FeaturedProducts = ({
     }, []);
 
     useEffect(() => {
+        let cancelled = false;
+        let retryTimer = null;
+
         const fetchAndCache = async () => {
             if (!hasProductSource) {
                 setLocalProducts([]);
@@ -135,22 +139,55 @@ const FeaturedProducts = ({
                 return;
             }
 
-            try {
-                setLoading(true);
-                const baseUrl = getApiUrl();
-                const params = new URLSearchParams();
-                const requestedLimit = Math.max(Number(limit) || 0, normalizedSelectedProductIds.length || 0, 1);
+            const baseUrl = getApiUrl();
+            const params = new URLSearchParams();
+            const requestedLimit = Math.max(Number(limit) || 0, normalizedSelectedProductIds.length || 0, 1);
 
-                if (normalizedSelectedProductIds.length > 0) {
-                    params.set('ids', normalizedSelectedProductIds.join(','));
-                    params.set('limit', String(requestedLimit));
-                } else if (category && category.trim()) {
-                    params.set('category', category.trim());
-                    params.set('limit', String(requestedLimit));
+            if (normalizedSelectedProductIds.length > 0) {
+                params.set('ids', normalizedSelectedProductIds.join(','));
+                params.set('limit', String(requestedLimit));
+            } else if (category && category.trim()) {
+                params.set('category', category.trim());
+                params.set('limit', String(requestedLimit));
+            }
+
+            const requestUrl = `${baseUrl}/api/products?${params.toString()}`;
+            const storageKey = `featured_products_cache:${requestUrl}`;
+
+            const applyCachedProducts = () => {
+                const cachedData = sessionStorage.getItem(storageKey);
+                if (!cachedData) {
+                    return false;
                 }
 
-                const data = await cachedJsonFetch(`${baseUrl}/api/products?${params.toString()}`);
+                try {
+                    const parsed = JSON.parse(cachedData);
+                    const cachedProducts = Array.isArray(parsed) ? parsed : (parsed?.products || []);
+                    if (!Array.isArray(cachedProducts) || cachedProducts.length === 0) {
+                        return false;
+                    }
+                    setLocalProducts(cachedProducts);
+                    return true;
+                } catch {
+                    sessionStorage.removeItem(storageKey);
+                    return false;
+                }
+            };
+
+            const hasCachedProducts = applyCachedProducts();
+            if (hasCachedProducts) {
+                setLoading(false);
+            } else {
+                setLoading(true);
+            }
+
+            try {
+                const data = await cachedJsonFetch(requestUrl);
+                if (cancelled) {
+                    return;
+                }
                 const products = Array.isArray(data) ? data : (data?.products || []);
+                sessionStorage.setItem(storageKey, JSON.stringify(products));
 
                 if (normalizedSelectedProductIds.length > 0) {
                     const productMap = new Map(products.map((product) => [String(product._id || product.id), product]));
@@ -162,16 +199,34 @@ const FeaturedProducts = ({
                 } else {
                     setLocalProducts(products);
                 }
+                setLoading(false);
             } catch (error) {
                 console.error('Failed to fetch products:', error);
-                setLocalProducts([]);
-            } finally {
-                setLoading(false);
+                if (cancelled) {
+                    return;
+                }
+
+                if (applyCachedProducts()) {
+                    setLoading(false);
+                    return;
+                }
+
+                setLoading(true);
+                retryTimer = setTimeout(() => {
+                    setProductRetryKey((value) => value + 1);
+                }, 4000);
             }
         };
 
         fetchAndCache();
-    }, [category, limit, normalizedSelectedProductIds, hasProductSource]);
+
+        return () => {
+            cancelled = true;
+            if (retryTimer) {
+                clearTimeout(retryTimer);
+            }
+        };
+    }, [category, limit, normalizedSelectedProductIds, hasProductSource, productRetryKey]);
 
     useEffect(() => {
         if (normalizedProducts && normalizedProducts.length > 0) {
